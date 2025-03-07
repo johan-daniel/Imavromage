@@ -1,5 +1,6 @@
 #include "Decoders.hpp"
 #include "utils.hpp"
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -66,13 +67,12 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
     while(ret != Z_STREAM_END) {
         ret = inflate(&zstr, Z_NO_FLUSH);
 
-        if(ret != Z_OK) {
+        if(ret != Z_OK && ret != Z_STREAM_END) {
             std::print("Inflate error encountered : {}", ret);
         }
     }
 
-    // Reverses the filters
-
+    // Reverse the filters
 
     delete[] file_buffer;
     delete[] dbuf;
@@ -96,6 +96,10 @@ void DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
     png.w = Read<uint32_t, true>(data, idx, chunk_len);
     png.h = Read<uint32_t, true>(data, idx, chunk_len);
     png.bit_depth = Read<uint8_t, true>(data, idx, chunk_len);
+    png.color_type = static_cast<PNG_COLOR_TYPE>(Read<uint8_t>(data, idx, chunk_len));
+    png.compression_method = Read<uint8_t>(data, idx, chunk_len);
+    png.filter_method = Read<uint8_t>(data, idx, chunk_len);
+    png.interlace_method = Read<uint8_t>(data, idx, chunk_len);
 
     return;
 }
