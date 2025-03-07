@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 enum class ChunkType : uint32_t { 
@@ -30,6 +31,13 @@ enum class PNG_COLOR_TYPE : uint8_t {
     RGBA = 6
 };
 
+const std::unordered_map<PNG_COLOR_TYPE, uint8_t> channel_nb {
+    { PNG_COLOR_TYPE::GSC, 1 },
+    { PNG_COLOR_TYPE::RGB, 3 },
+    { PNG_COLOR_TYPE::GSCA, 2 }, 
+    { PNG_COLOR_TYPE::RGBA, 4 }    
+};
+
 
 struct PNG_IMG {
     uint32_t w, h;
@@ -39,6 +47,14 @@ struct PNG_IMG {
     uint8_t filter_method;
     uint8_t interlace_method;
     std::vector<uint8_t> compressed_data;
+};
+
+enum class PNG_FILT_TYPE : uint8_t {
+    NONE = 0,
+    SUB = 1,
+    UP = 2,
+    AVG = 3,
+    PAETH = 4
 };
 
 

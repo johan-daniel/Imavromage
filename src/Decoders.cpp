@@ -1,12 +1,15 @@
 #include "Decoders.hpp"
 #include "utils.hpp"
+#include <array>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <ios>
 #include <iostream>
+#include <ostream>
 #include <print>
 #include <zlib.h>
 
@@ -44,11 +47,12 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
     }
     png.compressed_data.shrink_to_fit();
 
+    const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;
 
     // Decompress the PNG data using zlib
     // TODO: Implement the Inflate algorithm myself
-    size_t dbuf_len = png.w * png.h * png.bit_depth;
-    uint8_t* dbuf = (uint8_t*) malloc(dbuf_len);
+    size_t dbuf_len = png.w * png.h * bpp + png.h;
+    uint8_t* dbuf = new uint8_t[dbuf_len];
 
     z_stream zstr {};
     zstr.next_out = dbuf;
@@ -73,9 +77,46 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
     // Reverse the filters
+    size_t scanline_size = png.w * bpp + 1;
+
+    std::ofstream outppm("../resources/out.ppm", std::ios::binary);
+    outppm << "P6\n" << png.w << " " << png.h << "\n255" << std::endl;
+
+    idx = 0;
+    while(idx < dbuf_len) {
+        uint8_t* scanline_buf = ReadBytes(dbuf, idx, dbuf_len, scanline_size);
+        PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
+
+        size_t i = 0;
+
+        switch(filt) {
+
+        case PNG_FILT_TYPE::NONE:
+            // TODO : Figure out transparency cause wtf
+
+            // outppm.write(reinterpret_cast<char*>(scanline_buf+1), scanline_size-1);
+            while(i < scanline_size-1) {
+                uint32_t bleh = Read<uint32_t>(scanline_buf+1, i, scanline_size-1);
+                outppm << static_cast<uint8_t>(bleh) << static_cast<uint8_t>(bleh>>8) << static_cast<uint8_t>(bleh>>16);
+            }
+
+            break;
+
+        case PNG_FILT_TYPE::SUB:
+        case PNG_FILT_TYPE::UP:
+        case PNG_FILT_TYPE::AVG:
+        case PNG_FILT_TYPE::PAETH:
+            std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
+            break;
+
+        }
+    }
+
+    outppm.close();
 
     delete[] file_buffer;
     delete[] dbuf;
+
 }
 
 
