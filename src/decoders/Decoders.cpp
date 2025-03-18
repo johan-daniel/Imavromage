@@ -1,7 +1,5 @@
 #include "Decoders.hpp"
-#include "utils.hpp"
-#include <array>
-#include <bit>
+#include "../include/utils.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -79,8 +77,14 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
     // Reverse the filters
     size_t scanline_size = png.w * bpp + 1;
 
-    std::ofstream outppm("../resources/out.ppm", std::ios::binary);
-    outppm << "P6\n" << png.w << " " << png.h << "\n255" << std::endl;
+    std::ofstream outppm("../resources/out.pam", std::ios::binary);
+    outppm << "P7\n" 
+        << "WIDTH " << png.w << "\n" 
+        << "HEIGHT " <<  png.h << "\n"
+        << "DEPTH " << static_cast<int>(channel_nb.at(png.color_type)) << "\n"
+        << "MAXVAL 255\n"
+        << "TUPLTYPE RGB_ALPHA\n"
+        << "ENDHDR" << std::endl;
 
     idx = 0;
     while(idx < dbuf_len) {
@@ -94,11 +98,11 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
         case PNG_FILT_TYPE::NONE:
             // TODO : Figure out transparency cause wtf
 
-            // outppm.write(reinterpret_cast<char*>(scanline_buf+1), scanline_size-1);
-            while(i < scanline_size-1) {
-                uint32_t bleh = Read<uint32_t>(scanline_buf+1, i, scanline_size-1);
-                outppm << static_cast<uint8_t>(bleh) << static_cast<uint8_t>(bleh>>8) << static_cast<uint8_t>(bleh>>16);
-            }
+            outppm.write(reinterpret_cast<char*>(scanline_buf+1), scanline_size-1);
+            // while(i < scanline_size-1) {
+            //     uint32_t bleh = Read<uint32_t>(scanline_buf+1, i, scanline_size-1);
+            //     outppm << static_cast<uint8_t>(bleh) << static_cast<uint8_t>(bleh>>8) << static_cast<uint8_t>(bleh>>16);
+            // }
 
             break;
 

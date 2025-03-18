@@ -5,6 +5,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <unordered_map>
+
+
+enum class Formats : uint8_t {
+    PNG
+};
+
+const std::unordered_map<Formats, uint8_t*> magics = {
+    { Formats::PNG, new uint8_t[]{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A} }
+};
+
+constexpr uint8_t max_magic_length = 8;
+
 
 
 
