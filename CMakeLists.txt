@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.25.1)
 
 project("Imavromage" VERSION 0.0.1)
 
-cmake_minimum_required(VERSION 3.25.1)
-
 set(CMAKE_CXX_STANDARD 23)
 
 file(GLOB_RECURSE HDRS "src/*.hpp")
