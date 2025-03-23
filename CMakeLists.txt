@@ -15,8 +15,8 @@ find_package(ZLIB REQUIRED)
 
 add_library(ivmg SHARED ${SRCS} ${HDRS})
 
-set_target_properties(ivmg PROPERTIES 
-    VERSION ${PROJECT_VERSION} 
+set_target_properties(ivmg PROPERTIES
+    VERSION ${PROJECT_VERSION}
     VISIBILITY_INLINES_HIDDEN TRUE
 )
 

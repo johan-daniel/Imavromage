@@ -1,7 +1,8 @@
-#ifndef __IMAGE_HPP__
-#define __IMAGE_HPP__
+#pragma once
 
 #include <cstdint>
+#include <string>
+#include <fstream>
 #include "filters/Filter.hpp"
 
 using namespace ivmg::filt;
@@ -11,11 +12,11 @@ namespace ivmg {
 class Image {
 
     public:
-        uint16_t width;
-        uint16_t height;
+        uint32_t width;
+        uint32_t height;
         uint8_t* data;
 
-        Image(uint16_t w, uint16_t h): width(w), height(h) {
+        Image(uint32_t w, uint32_t h): width(w), height(h) {
             data = new uint8_t[width * height * 4];
         }
 
@@ -31,10 +32,22 @@ class Image {
             return *this | f;
         }
 
+        inline void save(std::string filepath) {
+            std::ofstream outppm(filepath, std::ios::binary);
+            auto test = sizeof(data);
+            outppm << "P7\n"
+                << "WIDTH " << width << "\n"
+                << "HEIGHT " << height << "\n"
+                << "DEPTH " << 4 << "\n"
+                << "MAXVAL 255\n"
+                << "TUPLTYPE RGB_ALPHA\n"
+                << "ENDHDR" << std::endl;
+
+            outppm.write(reinterpret_cast<char*>(data), height*width*4);
+            outppm.close();
+        }
+
 };
 
 
 }
-
-
-#endif

@@ -1,12 +1,16 @@
-#ifndef __DECODERS_HPP__
-#define __DECODERS_HPP__
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
+#include <ivmg/Image.hpp>
 
-enum class ChunkType : uint32_t { 
+
+using namespace ivmg;
+
+
+enum class ChunkType : uint32_t {
     IHDR = 0x49484452,
     PLTE = 0x504C5445,
     IDAT = 0x49444154,
@@ -23,7 +27,7 @@ struct ChunkPNG {
 
 
 
-enum class PNG_COLOR_TYPE : uint8_t { 
+enum class PNG_COLOR_TYPE : uint8_t {
     GSC = 0,
     RGB = 2,
     IDX = 3,
@@ -34,8 +38,8 @@ enum class PNG_COLOR_TYPE : uint8_t {
 const std::unordered_map<PNG_COLOR_TYPE, uint8_t> channel_nb {
     { PNG_COLOR_TYPE::GSC, 1 },
     { PNG_COLOR_TYPE::RGB, 3 },
-    { PNG_COLOR_TYPE::GSCA, 2 }, 
-    { PNG_COLOR_TYPE::RGBA, 4 }    
+    { PNG_COLOR_TYPE::GSCA, 2 },
+    { PNG_COLOR_TYPE::RGBA, 4 }
 };
 
 
@@ -59,7 +63,5 @@ enum class PNG_FILT_TYPE : uint8_t {
 
 
 ChunkPNG ReadChunk(uint8_t* file_buffer, size_t &read_idx, size_t data_length);
-void DecodePNG(uint8_t* file_buffer, size_t length);
+Image DecodePNG(uint8_t* file_buffer, size_t length);
 void DecodeIHDR(uint8_t* data, uint32_t chunk_len, PNG_IMG& png);
-
-#endif

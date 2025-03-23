@@ -1,17 +1,15 @@
-#include "Decoders.hpp"
 #include "../include/utils.hpp"
+#include "PNG.hpp"
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <ios>
 #include <iostream>
 #include <ostream>
 #include <print>
 #include <zlib.h>
 
-void DecodePNG(uint8_t* file_buffer, size_t length) {
+Image DecodePNG(uint8_t* file_buffer, size_t length) {
     std::cout << "Decoding PNG..." << std::endl;
 
     PNG_IMG png {};
@@ -21,12 +19,12 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
 
     while(!eof) {
         ChunkPNG chunk = ReadChunk(file_buffer, idx, length);
-        std::cout << "Got chunk " << std::hex << std::showbase << static_cast<uint32_t>(chunk.type) 
+        std::cout << "Got chunk " << std::hex << std::showbase << static_cast<uint32_t>(chunk.type)
             << std::dec << " of length " << chunk.length << std::endl;
 
         switch(chunk.type) {
 
-            case ChunkType::IHDR: 
+            case ChunkType::IHDR:
                 DecodeIHDR(chunk.data, chunk.length, png);
                 break;
 
@@ -62,48 +60,41 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
     ret = inflateInit(&zstr);
 
     if(ret != Z_OK) {
-        std::print("Error initializing zlib stream: {}", ret);
+        std::println("Error initializing zlib stream: {}", ret);
         exit(ret);
     }
-    
+
     while(ret != Z_STREAM_END) {
         ret = inflate(&zstr, Z_NO_FLUSH);
 
         if(ret != Z_OK && ret != Z_STREAM_END) {
-            std::print("Inflate error encountered : {}", ret);
+            std::println("Inflate error encountered : {}", ret);
         }
     }
+
+    ret = inflateEnd(&zstr);
+    if(ret != Z_OK) {
+        std::println("I shit pant while finishing inflating: {}", ret);
+        exit(ret);
+    }
+
+
+    ivmg::Image img (png.w, png.h);
 
     // Reverse the filters
     size_t scanline_size = png.w * bpp + 1;
 
-    std::ofstream outppm("../resources/out.pam", std::ios::binary);
-    outppm << "P7\n" 
-        << "WIDTH " << png.w << "\n" 
-        << "HEIGHT " <<  png.h << "\n"
-        << "DEPTH " << static_cast<int>(channel_nb.at(png.color_type)) << "\n"
-        << "MAXVAL 255\n"
-        << "TUPLTYPE RGB_ALPHA\n"
-        << "ENDHDR" << std::endl;
 
     idx = 0;
     while(idx < dbuf_len) {
-        uint8_t* scanline_buf = ReadBytes(dbuf, idx, dbuf_len, scanline_size);
+        uint8_t scanline_buf[scanline_size];
+        ReadBytes(dbuf, scanline_buf, idx, dbuf_len, scanline_size);
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
-
-        size_t i = 0;
 
         switch(filt) {
 
         case PNG_FILT_TYPE::NONE:
-            // TODO : Figure out transparency cause wtf
-
-            outppm.write(reinterpret_cast<char*>(scanline_buf+1), scanline_size-1);
-            // while(i < scanline_size-1) {
-            //     uint32_t bleh = Read<uint32_t>(scanline_buf+1, i, scanline_size-1);
-            //     outppm << static_cast<uint8_t>(bleh) << static_cast<uint8_t>(bleh>>8) << static_cast<uint8_t>(bleh>>16);
-            // }
-
+            std::memcpy(img.data + idx - (idx / scanline_size), scanline_buf+1, scanline_size-1);
             break;
 
         case PNG_FILT_TYPE::SUB:
@@ -116,11 +107,10 @@ void DecodePNG(uint8_t* file_buffer, size_t length) {
         }
     }
 
-    outppm.close();
-
-    delete[] file_buffer;
     delete[] dbuf;
+    delete[] file_buffer;
 
+    return img;
 }
 
 
@@ -128,7 +118,8 @@ ChunkPNG ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
     ChunkPNG chunk {};
     chunk.length = Read<uint32_t, true>(data, idx, dlen);
     chunk.type = static_cast<ChunkType>(Read<uint32_t, true>(data, idx, dlen));
-    chunk.data = ReadBytes(data, idx, dlen, chunk.length);
+    chunk.data = new uint8_t[chunk.length];
+    ReadBytes(data, chunk.data, idx, dlen, chunk.length);
     chunk.crc = Read<uint32_t, true>(data, idx, dlen);
 
     return chunk;
