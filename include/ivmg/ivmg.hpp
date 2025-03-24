@@ -2,7 +2,6 @@
 #define __IVMG__
 
 #include "Image.hpp"
-#include <string>
 
 namespace ivmg {
 

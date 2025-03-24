@@ -1,4 +1,3 @@
-#include <cstring>
 #include <print>
 #include <ivmg/ivmg.hpp>
 #include <ivmg/Image.hpp>

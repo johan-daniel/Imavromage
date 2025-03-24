@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <fstream>
 #include "filters/Filter.hpp"

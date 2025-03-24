@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bit>
-#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <vector>

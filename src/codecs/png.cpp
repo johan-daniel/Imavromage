@@ -1,11 +1,6 @@
 #include "../include/utils.hpp"
-#include "PNG.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <ios>
+#include "png.hpp"
 #include <iostream>
-#include <ostream>
 #include <print>
 #include <zlib.h>
 

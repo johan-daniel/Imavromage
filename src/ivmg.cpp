@@ -2,7 +2,7 @@
 #include <fstream>
 #include <print>
 #include "include/utils.hpp"
-#include "codecs/PNG.hpp"
+#include "codecs/png.hpp"
 
 using namespace ivmg;
 
