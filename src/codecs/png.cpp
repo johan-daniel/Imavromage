@@ -91,7 +91,6 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
         case PNG_FILT_TYPE::NONE:
             std::memcpy(img.data + idx - scanline_size - i, scanline_buf+1, scanline_size-1);
-            // img.data.insert(img.data.end(), scanline_buf+1, scanline_buf + scanline_size);
             break;
 
         case PNG_FILT_TYPE::SUB:
