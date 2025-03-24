@@ -79,17 +79,19 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     // Reverse the filters
     size_t scanline_size = png.w * bpp + 1;
 
-
     idx = 0;
     while(idx < dbuf_len) {
         uint8_t scanline_buf[scanline_size];
         ReadBytes(dbuf, scanline_buf, idx, dbuf_len, scanline_size);
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
 
+        auto i = idx / scanline_size -1;
+
         switch(filt) {
 
         case PNG_FILT_TYPE::NONE:
-            std::memcpy(img.data + idx - (idx / scanline_size), scanline_buf+1, scanline_size-1);
+            std::memcpy(img.data + idx - scanline_size - i, scanline_buf+1, scanline_size-1);
+            // img.data.insert(img.data.end(), scanline_buf+1, scanline_buf + scanline_size);
             break;
 
         case PNG_FILT_TYPE::SUB:

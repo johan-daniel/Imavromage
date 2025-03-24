@@ -2,6 +2,7 @@
 
 #include <string>
 #include <fstream>
+#include <vector>
 #include "filters/Filter.hpp"
 
 using namespace ivmg::filt;
@@ -13,15 +14,15 @@ class Image {
     public:
         uint32_t width;
         uint32_t height;
+        // std::vector<uint8_t> data
         uint8_t* data;
 
         Image(uint32_t w, uint32_t h): width(w), height(h) {
+            // data.reserve(width * height * 4);
             data = new uint8_t[width * height * 4];
         }
 
-        ~Image() {
-            delete[] data;
-        }
+        ~Image() { delete[] data; }
 
         Image operator|(Filter f) {
             return Image(0, 0); // Placeholder

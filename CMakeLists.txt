@@ -5,7 +5,6 @@ project("Imavromage" VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 23)
 
 file(GLOB_RECURSE HDRS "src/*.hpp")
-file(GLOB_RECURSE PHDRS "include/*.hpp")
 file(GLOB_RECURSE SRCS "src/*.cpp")
 
 
