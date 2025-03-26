@@ -40,7 +40,5 @@ Image ivmg::open(std::string imgpath) {
                 }
             }
         }
-
-        // delete[] mag;
     }
 };

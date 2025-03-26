@@ -15,23 +15,21 @@ class Image {
         uint32_t height;
         uint8_t* data;
 
-        Image(uint32_t w, uint32_t h): width(w), height(h) {
-            data = new uint8_t[width * height * 4];
+        Image(uint32_t w, uint32_t h, uint8_t* d): width(w), height(h), data(d) {
         }
 
         ~Image() { delete[] data; }
 
-        Image operator|(Filter f) {
-            return Image(0, 0); // Placeholder
-        }
+        // Image operator|(Filter f) {
+        //     return Image(0, 0, {}); // Placeholder
+        // }
 
-        Image operator>>(Filter f) {
-            return *this | f;
-        }
+        // Image operator>>(Filter f) {
+        //     return *this | f;
+        // }
 
         inline void save(std::string filepath) {
             std::ofstream outppm(filepath, std::ios::binary);
-            auto test = sizeof(data);
             outppm << "P7\n"
                 << "WIDTH " << width << "\n"
                 << "HEIGHT " << height << "\n"

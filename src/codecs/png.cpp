@@ -26,17 +26,17 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
             case ChunkType::PLTE:
                 break;
             case ChunkType::IDAT:
-                png.compressed_data.insert(png.compressed_data.end(), &chunk.data[0], &chunk.data[chunk.length]);
+                png.compressed_data.insert(png.compressed_data.end(), chunk.data, chunk.data+chunk.length);
                 break;
             case ChunkType::IEND:
                 eof = true;
                 break;
 
         }
-
-        delete[] chunk.data;
     }
-    png.compressed_data.shrink_to_fit();
+    delete[] file_buffer;
+
+    // png.compressed_data.shrink_to_fit();
 
     const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;
 
@@ -74,7 +74,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
 
-    ivmg::Image img (png.w, png.h);
+    ivmg::Image img (png.w, png.h, dbuf);
 
     // Reverse the filters
     size_t scanline_size = png.w * bpp + 1;
@@ -103,9 +103,6 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
         }
     }
 
-    delete[] dbuf;
-    delete[] file_buffer;
-
     return img;
 }
 
@@ -114,8 +111,8 @@ ChunkPNG ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
     ChunkPNG chunk {};
     chunk.length = Read<uint32_t, true>(data, idx, dlen);
     chunk.type = static_cast<ChunkType>(Read<uint32_t, true>(data, idx, dlen));
-    chunk.data = new uint8_t[chunk.length];
-    ReadBytes(data, chunk.data, idx, dlen, chunk.length);
+    chunk.data = data + idx;
+    idx += chunk.length;
     chunk.crc = Read<uint32_t, true>(data, idx, dlen);
 
     return chunk;
