@@ -17,6 +17,13 @@ set_target_properties(ivmg PROPERTIES
     VISIBILITY_INLINES_HIDDEN TRUE
 )
 
+target_compile_definitions(ivmg
+    PRIVATE
+        # If the debug configuration pass the DEBUG define to the compiler
+        $<$<CONFIG:Debug>:DEBUG>
+)
+
+
 target_link_libraries(ivmg ZLIB::ZLIB)
 
 target_include_directories(ivmg

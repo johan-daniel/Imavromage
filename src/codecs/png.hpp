@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <ivmg/Image.hpp>
+#include "include/macros.hpp"
 
 
 using namespace ivmg;

@@ -5,7 +5,7 @@
 #include <zlib.h>
 
 Image DecodePNG(uint8_t* file_buffer, size_t length) {
-    std::cout << "Decoding PNG..." << std::endl;
+    D(std::cout << "Decoding PNG..." << std::endl;)
 
     PNG_IMG png {};
     size_t pxl_idx {0};
@@ -14,8 +14,8 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
     while(!eof) {
         ChunkPNG chunk = ReadChunk(file_buffer, pxl_idx, length);
-        std::cout << "Got chunk " << std::hex << std::showbase << static_cast<uint32_t>(chunk.type)
-            << std::dec << " of length " << chunk.length << std::endl;
+        D(std::cout << "Got chunk " << std::hex << std::showbase << static_cast<uint32_t>(chunk.type)
+            << std::dec << " of length " << chunk.length << std::endl;)
 
         switch(chunk.type) {
 
@@ -35,8 +35,6 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
         }
     }
     delete[] file_buffer;
-
-    // png.compressed_data.shrink_to_fit();
 
     const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;
 
@@ -111,10 +109,17 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
         }
 
 
-        case PNG_FILT_TYPE::UP:
+        case PNG_FILT_TYPE::UP: {
             u++;
-            std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
+
+            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
+                const uint8_t prev = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size];
+                img.data[write_idx++] = (prev + scanline_buf[sl_idx + 1]) % 256;
+            }
+
             break;
+        }
+
         case PNG_FILT_TYPE::AVG:
             a++;
             std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
@@ -128,7 +133,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
     delete[] dbuf;
-    std::println("Filter count - {} NONE - {} SUB - {} UP - {} UP - {} PAETH", n,s,u,a,p);
+    D(std::println("Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
 
     return img;
 }
