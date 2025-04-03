@@ -8,12 +8,12 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     std::cout << "Decoding PNG..." << std::endl;
 
     PNG_IMG png {};
-    size_t idx {0};
+    size_t pxl_idx {0};
 
     bool eof = false;
 
     while(!eof) {
-        ChunkPNG chunk = ReadChunk(file_buffer, idx, length);
+        ChunkPNG chunk = ReadChunk(file_buffer, pxl_idx, length);
         std::cout << "Got chunk " << std::hex << std::showbase << static_cast<uint32_t>(chunk.type)
             << std::dec << " of length " << chunk.length << std::endl;
 
@@ -74,34 +74,61 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
 
-    ivmg::Image img (png.w, png.h, dbuf);
+    uint8_t* outbuf = new uint8_t[png.w * png.h * 4];
+    ivmg::Image img (png.w, png.h, outbuf);
 
     // Reverse the filters
-    size_t scanline_size = png.w * bpp + 1;
+    size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
 
-    idx = 0;
-    while(idx < dbuf_len) {
+    pxl_idx = 0;
+    int n=0, s=0, u=0, a=0, p=0;
+
+    size_t write_idx = 0;
+
+    while(pxl_idx < dbuf_len) {
         uint8_t scanline_buf[scanline_size];
-        ReadBytes(dbuf, scanline_buf, idx, dbuf_len, scanline_size);
+        ReadBytes(dbuf, scanline_buf, pxl_idx, dbuf_len, scanline_size);
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
-
-        auto i = idx / scanline_size -1;
 
         switch(filt) {
 
-        case PNG_FILT_TYPE::NONE:
-            std::memcpy(img.data + idx - scanline_size - i, scanline_buf+1, scanline_size-1);
+        case PNG_FILT_TYPE::NONE: {
+            n++;
+            std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
+            write_idx += scanline_size-1;
             break;
+        }
 
-        case PNG_FILT_TYPE::SUB:
+        case PNG_FILT_TYPE::SUB: {
+            s++;
+
+            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
+                const uint8_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];
+                img.data[write_idx++] = (prev + scanline_buf[sl_idx + 1]) % 256;
+            }
+
+            break;
+        }
+
+
         case PNG_FILT_TYPE::UP:
+            u++;
+            std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
+            break;
         case PNG_FILT_TYPE::AVG:
+            a++;
+            std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
+            break;
         case PNG_FILT_TYPE::PAETH:
+            p++;
             std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
             break;
 
         }
     }
+
+    delete[] dbuf;
+    std::println("Filter count - {} NONE - {} SUB - {} UP - {} UP - {} PAETH", n,s,u,a,p);
 
     return img;
 }
