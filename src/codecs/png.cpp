@@ -72,14 +72,22 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
 
-    uint8_t* outbuf = new uint8_t[png.w * png.h * 4];
-    ivmg::Image img (png.w, png.h, outbuf);
 
     // Reverse the filters
+    uint8_t* outbuf = new uint8_t[png.w * png.h * 4];   // ivmg images are RGBA
+    ivmg::Image img (png.w, png.h, outbuf);
+
     size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
 
     pxl_idx = 0;
-    int n=0, s=0, u=0, a=0, p=0;
+
+    D(
+    int n=0;
+    int s=0;
+    int u=0;
+    int a=0;
+    int p=0;
+    )
 
     size_t write_idx = 0;
 
@@ -91,18 +99,18 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
         switch(filt) {
 
         case PNG_FILT_TYPE::NONE: {
-            n++;
+            D(n++;)
             std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
             write_idx += scanline_size-1;
             break;
         }
 
         case PNG_FILT_TYPE::SUB: {
-            s++;
+            D(s++;)
 
-            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
+            for(size_t sl_idx = 1; sl_idx < scanline_size; sl_idx++) {
                 const uint8_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];
-                img.data[write_idx++] = (prev + scanline_buf[sl_idx + 1]) % 256;
+                img.data[write_idx++] = (prev + scanline_buf[sl_idx]) % 256;
             }
 
             break;
@@ -110,11 +118,11 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
 
         case PNG_FILT_TYPE::UP: {
-            u++;
+            D(u++;)
 
-            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const uint8_t prev = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size];
-                img.data[write_idx++] = (prev + scanline_buf[sl_idx + 1]) % 256;
+            for(size_t sl_idx = 1; sl_idx < scanline_size; sl_idx++) {
+                const uint8_t prev = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size + 1];
+                img.data[write_idx++] = (prev + scanline_buf[sl_idx]) % 256;
             }
 
             break;
