@@ -154,14 +154,14 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
             D(p++;)
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const bool px1 = sl_idx < bpp;
-                const bool line1 = write_idx <= scanline_size;
+                const bool first_pixel = sl_idx < bpp;
+                const bool first_scanline = write_idx < scanline_size - 1;
 
-                const uint8_t left = (px1) ? 0 : img.data[write_idx - bpp];
-                const uint8_t up = (line1) ? 0 : img.data[write_idx - scanline_size + 1];
-                const uint8_t upleft = (line1 || px1) ? 0 : img.data[write_idx - scanline_size + 1 - bpp];
+                const uint8_t left = first_pixel ? 0 : img.data[write_idx - bpp];
+                const uint8_t up = first_scanline ? 0 : img.data[write_idx - scanline_size + 1];
+                const uint8_t upleft = (first_pixel || first_scanline) ? 0 : img.data[write_idx - scanline_size + 1 - bpp];
 
-                img.data[write_idx++] = (scanline_buf[sl_idx + 1] + PaethPredictor(left, up, upleft)) % 256;
+                img.data[write_idx++] = (PaethPredictor(left, up, upleft) + scanline_buf[sl_idx + 1]) % 256;
             }
 
             break;
@@ -200,11 +200,11 @@ void DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
     png.interlace_method = Read<uint8_t>(data, idx, chunk_len);
 }
 
-uint16_t PaethPredictor(uint16_t a, uint16_t b, uint16_t c) {
-    const uint16_t p = a + b - c;
-    const uint16_t pa = std::abs(p - a);
-    const uint16_t pb = std::abs(p - b);
-    const uint16_t pc = std::abs(p - c);
+int16_t PaethPredictor(uint8_t a, uint8_t b, uint8_t c) {
+    const int16_t p = a + b - c;
+    const int16_t pa = std::abs(p - a);
+    const int16_t pb = std::abs(p - b);
+    const int16_t pc = std::abs(p - c);
 
     if(pa <= pb && pa <= pc) return a;
     else if(pb <= pc) return b;
