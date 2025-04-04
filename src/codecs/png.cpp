@@ -112,8 +112,8 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
             D(s++;)
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const uint8_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
-                img.data[write_idx++] = (prev + scanline_buf[sl_idx + 1]) % 256;
+                const uint8_t left = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
+                img.data[write_idx++] = (left + scanline_buf[sl_idx + 1]) % 256;
             }
 
             break;
@@ -141,20 +141,31 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
             D(a++;)
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const uint16_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
+                const uint16_t left = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
                 const uint16_t up = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size + 1];
-                img.data[write_idx++] = (scanline_buf[sl_idx + 1] + ((prev + up) >> 1)) % 256;
+                img.data[write_idx++] = (scanline_buf[sl_idx + 1] + ((left + up) >> 1)) % 256;
             }
 
             break;
         }
 
 
-        case PNG_FILT_TYPE::PAETH:
-            p++;
-            std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
-            break;
+        case PNG_FILT_TYPE::PAETH: {
+            D(p++;)
 
+            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
+                const bool px1 = sl_idx < bpp;
+                const bool line1 = write_idx <= scanline_size;
+
+                const uint8_t left = (px1) ? 0 : img.data[write_idx - bpp];
+                const uint8_t up = (line1) ? 0 : img.data[write_idx - scanline_size + 1];
+                const uint8_t upleft = (line1 || px1) ? 0 : img.data[write_idx - scanline_size + 1 - bpp];
+
+                img.data[write_idx++] = (scanline_buf[sl_idx + 1] + PaethPredictor(left, up, upleft)) % 256;
+            }
+
+            break;
+        }
         }
     }
 
@@ -187,6 +198,15 @@ void DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
     png.compression_method = Read<uint8_t>(data, idx, chunk_len);
     png.filter_method = Read<uint8_t>(data, idx, chunk_len);
     png.interlace_method = Read<uint8_t>(data, idx, chunk_len);
+}
 
-    return;
+uint16_t PaethPredictor(uint16_t a, uint16_t b, uint16_t c) {
+    const uint16_t p = a + b - c;
+    const uint16_t pa = std::abs(p - a);
+    const uint16_t pb = std::abs(p - b);
+    const uint16_t pc = std::abs(p - c);
+
+    if(pa <= pb && pa <= pc) return a;
+    else if(pb <= pc) return b;
+    else return c;
 }

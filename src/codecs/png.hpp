@@ -64,3 +64,4 @@ enum class PNG_FILT_TYPE : uint8_t {
 ChunkPNG ReadChunk(uint8_t* file_buffer, size_t &read_idx, size_t data_length);
 Image DecodePNG(uint8_t* file_buffer, size_t length);
 void DecodeIHDR(uint8_t* data, uint32_t chunk_len, PNG_IMG& png);
+uint16_t PaethPredictor(uint16_t a, uint16_t b, uint16_t c);
