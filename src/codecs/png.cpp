@@ -36,7 +36,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     }
     delete[] file_buffer;
 
-    const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;
+    const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;   // Bytes per pixel
 
     // Decompress the PNG data using zlib
     // TODO: Implement the Inflate algorithm myself
@@ -100,38 +100,56 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
         case PNG_FILT_TYPE::NONE: {
             D(n++;)
+
+            // Just copy everything
             std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
             write_idx += scanline_size-1;
+
             break;
         }
 
         case PNG_FILT_TYPE::SUB: {
             D(s++;)
 
-            for(size_t sl_idx = 1; sl_idx < scanline_size; sl_idx++) {
-                const uint8_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];
-                img.data[write_idx++] = (prev + scanline_buf[sl_idx]) % 256;
+            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
+                const uint8_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
+                img.data[write_idx++] = (prev + scanline_buf[sl_idx + 1]) % 256;
             }
 
             break;
         }
-
 
         case PNG_FILT_TYPE::UP: {
             D(u++;)
 
+            // Take the first line as is
+            if(write_idx <= scanline_size) {
+                std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
+                write_idx += scanline_size-1;
+                continue;
+            }
+
             for(size_t sl_idx = 1; sl_idx < scanline_size; sl_idx++) {
-                const uint8_t prev = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size + 1];
-                img.data[write_idx++] = (prev + scanline_buf[sl_idx]) % 256;
+                const uint8_t up = img.data[write_idx - scanline_size + 1];
+                img.data[write_idx++] = (up + scanline_buf[sl_idx]) % 256;
             }
 
             break;
         }
 
-        case PNG_FILT_TYPE::AVG:
-            a++;
-            std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
+        case PNG_FILT_TYPE::AVG: {
+            D(a++;)
+
+            for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
+                const uint16_t prev = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
+                const uint16_t up = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size + 1];
+                img.data[write_idx++] = (scanline_buf[sl_idx + 1] + ((prev + up) >> 1)) % 256;
+            }
+
             break;
+        }
+
+
         case PNG_FILT_TYPE::PAETH:
             p++;
             std::println("Filter type {} is not yet supported", static_cast<uint8_t>(filt));
