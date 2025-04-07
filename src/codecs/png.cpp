@@ -1,4 +1,4 @@
-#include "../include/utils.hpp"
+#include "../utils.hpp"
 #include "png.hpp"
 #include <iostream>
 #include <print>
@@ -75,7 +75,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
     // Reverse the filters
     uint8_t* outbuf = new uint8_t[png.w * png.h * 4];   // ivmg images are RGBA
-    ivmg::Image img (png.w, png.h, outbuf);
+    Image img (png.w, png.h, outbuf);
 
     size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
 
@@ -93,7 +93,8 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
     while(pxl_idx < dbuf_len) {
         uint8_t scanline_buf[scanline_size];
-        ReadBytes(dbuf, scanline_buf, pxl_idx, dbuf_len, scanline_size);
+        std::memcpy(scanline_buf, dbuf + pxl_idx, scanline_size);
+        pxl_idx += scanline_size;
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
 
         switch(filt) {
@@ -178,11 +179,11 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
 ChunkPNG ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
     ChunkPNG chunk {};
-    chunk.length = Read<uint32_t, true>(data, idx, dlen);
-    chunk.type = static_cast<ChunkType>(Read<uint32_t, true>(data, idx, dlen));
+    chunk.length = std::byteswap(Read<uint32_t>(data, idx));
+    chunk.type = static_cast<ChunkType>(std::byteswap(Read<uint32_t>(data, idx)));
     chunk.data = data + idx;
     idx += chunk.length;
-    chunk.crc = Read<uint32_t, true>(data, idx, dlen);
+    chunk.crc = std::byteswap(Read<uint32_t>(data, idx));
 
     return chunk;
 }
@@ -191,13 +192,13 @@ ChunkPNG ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
 
 void DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
     size_t idx {0};
-    png.w = Read<uint32_t, true>(data, idx, chunk_len);
-    png.h = Read<uint32_t, true>(data, idx, chunk_len);
-    png.bit_depth = Read<uint8_t, true>(data, idx, chunk_len);
-    png.color_type = static_cast<PNG_COLOR_TYPE>(Read<uint8_t>(data, idx, chunk_len));
-    png.compression_method = Read<uint8_t>(data, idx, chunk_len);
-    png.filter_method = Read<uint8_t>(data, idx, chunk_len);
-    png.interlace_method = Read<uint8_t>(data, idx, chunk_len);
+    png.w = std::byteswap(Read<uint32_t>(data, idx));
+    png.h = std::byteswap(Read<uint32_t>(data, idx));
+    png.bit_depth = std::byteswap(Read<uint8_t>(data, idx));
+    png.color_type = static_cast<PNG_COLOR_TYPE>(Read<uint8_t>(data, idx));
+    png.compression_method = Read<uint8_t>(data, idx);
+    png.filter_method = Read<uint8_t>(data, idx);
+    png.interlace_method = Read<uint8_t>(data, idx);
 }
 
 int16_t PaethPredictor(uint8_t a, uint8_t b, uint8_t c) {

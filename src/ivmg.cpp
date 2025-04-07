@@ -1,7 +1,7 @@
 #include <ivmg/ivmg.hpp>
 #include <fstream>
 #include <print>
-#include "include/utils.hpp"
+#include "utils.hpp"
 #include "codecs/png.hpp"
 
 using namespace ivmg;

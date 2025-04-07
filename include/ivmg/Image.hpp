@@ -8,6 +8,15 @@ using namespace ivmg::filt;
 
 namespace ivmg {
 
+
+union Pixel {
+    struct {
+        uint8_t r, g, b, a;
+    };
+    uint8_t rgba[4];
+};
+
+
 class Image {
 
     public:
