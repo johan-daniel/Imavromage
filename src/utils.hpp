@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <print>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -23,11 +24,20 @@ const std::unordered_set<Formats> avail_decoders = {
 
 
 template <typename T>
-T Read(uint8_t* data, size_t& idx) {
+T Read(uint8_t* data, size_t& idx, size_t data_length) {
     T dest;
 
-    std::memcpy(&dest, data+idx, sizeof(T));
-    idx += sizeof(T);
+    size_t read_size = sizeof(T);
+    std::println("Trying to read {} bytes @ {:#x}", read_size, reinterpret_cast<std::uintptr_t>(data+idx));
+
+    if(idx + read_size > data_length) {
+        read_size = read_size - ((idx + read_size) - (data_length));
+    }
+
+    std::memcpy(&dest, data+idx, read_size);
+    idx += read_size;
+
+    std::println("Read {} bytes @ {:#x}", read_size, reinterpret_cast<std::uintptr_t>(data+idx));
 
     return dest;
 }
