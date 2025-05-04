@@ -1,8 +1,6 @@
 #include <ivmg/ivmg.hpp>
-#include <fstream>
-#include <print>
+#include <stdexcept>
 #include "utils.hpp"
-#include "codecs/png.hpp"
 
 using namespace ivmg;
 
@@ -16,12 +14,10 @@ Image ivmg::open(std::string imgpath) {
     char magic_buffer[max_magic_length];
 
 
-    if(!file.read(magic_buffer, max_magic_length)) {
-        std::println("Error reading {} bytes from {}", max_magic_length, imgpath);
-    }
+    if(!file.read(magic_buffer, max_magic_length))
+        throw std::runtime_error(std::format("Error reading {} bytes from {}", max_magic_length, imgpath));
 
     uint8_t* file_buffer;
-
     for(auto& [ext, mag] : magics) {
         if(size_t mlen = sizeof(mag.data()); std::memcmp(magic_buffer, mag.data(), mlen) == 0) {
             file_buffer = new uint8_t[len-mlen];
@@ -29,12 +25,11 @@ Image ivmg::open(std::string imgpath) {
             file.read(reinterpret_cast<char*>(file_buffer), len-mlen);
             file.close();
 
-            if(!avail_decoders.contains(ext)) {
-                std::println("Ivmg doesn't supports decoding images of this type yet");
-                break;
-            }
+            if(!avail_decoders.contains(ext)) 
+                throw std::runtime_error("Ivmg doesn't support decoding images of this type yet");
 
             return avail_decoders.at(ext)(file_buffer, len-mlen);
         }
     }
+    throw std::runtime_error("Unknown format");
 };

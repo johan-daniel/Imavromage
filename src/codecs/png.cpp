@@ -3,22 +3,21 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
-#include <print>
 #include <zlib.h>
 
 Image DecodePNG(uint8_t* file_buffer, size_t length) {
-    D(std::cout << "Decoding PNG..." << std::endl;)
+    D(std::println("Decoding PNG");)
 
     PNG_IMG png {};
     size_t pxl_idx {0};
 
-    bool eof = false;
+    ChunkPNG chunk {};
 
-    while(!eof) {
-        ChunkPNG chunk = ReadChunk(file_buffer, pxl_idx, length);
-        D(std::cout << "Got chunk " << std::hex << std::showbase << static_cast<uint32_t>(chunk.type)
-            << std::dec << " of length " << chunk.length << std::endl;)
+    do {
+        chunk = ReadChunk(file_buffer, pxl_idx, length);
+        D(
+            std::println("Got chunk {:#x} of length {}", static_cast<uint32_t>(chunk.type), chunk.length);
+        )
 
         switch(chunk.type) {
 
@@ -32,11 +31,12 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
                 png.compressed_data.insert(png.compressed_data.end(), chunk.data, chunk.data+chunk.length);
                 break;
             case ChunkType::IEND:
-                eof = true;
                 break;
 
         }
-    }
+    } while(chunk.type != ChunkType::IEND);
+
+
     delete[] file_buffer;
 
     const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;   // Bytes per pixel
