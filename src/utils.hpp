@@ -2,11 +2,14 @@
 
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <print>
 #include <vector>
 #include <unordered_map>
-#include <unordered_set>
+#include <ivmg/Image.hpp>
+#include "codecs/png.hpp"
 
+using namespace ivmg;
 
 enum class Formats : uint8_t {
     PNG
@@ -18,8 +21,10 @@ const std::unordered_map<Formats, std::vector<uint8_t> > magics = {
 
 uint8_t const max_magic_length = 8;
 
-const std::unordered_set<Formats> avail_decoders = {
-    Formats::PNG
+typedef std::function<Image(uint8_t*, size_t)> Decoder_fn;
+
+const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
+    { Formats::PNG, DecodePNG }
 };
 
 

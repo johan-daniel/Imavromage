@@ -34,11 +34,7 @@ Image ivmg::open(std::string imgpath) {
                 break;
             }
 
-            switch(ext) {
-                case Formats::PNG: {
-                    return DecodePNG(file_buffer, len-mlen);
-                }
-            }
+            return avail_decoders.at(ext)(file_buffer, len-mlen);
         }
     }
 };
