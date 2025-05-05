@@ -1,4 +1,5 @@
 #include "../utils.hpp"
+#include "Logger.hpp"
 #include "png.hpp"
 #include <bit>
 #include <cstddef>
@@ -6,7 +7,8 @@
 #include <zlib.h>
 
 Image DecodePNG(uint8_t* file_buffer, size_t length) {
-    D(std::println("Decoding PNG");)
+    // D(std::println("Decoding PNG");)
+    Logger::log(LOG_LEVEL::INFO, "Decoding PNG of size {} bytes", length);
 
     PNG_IMG png {};
     size_t pxl_idx {0};
@@ -15,9 +17,13 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 
     do {
         chunk = ReadChunk(file_buffer, pxl_idx, length);
-        D(
-            std::println("Got chunk {:#x} of length {}", static_cast<uint32_t>(chunk.type), chunk.length);
-        )
+        // D(
+        //     std::println("Got chunk {:#x} of length {}", static_cast<uint32_t>(chunk.type), chunk.length);
+        // )
+
+
+        Logger::log(LOG_LEVEL::INFO, "Got chunk {:#x} of length {} bytes", static_cast<uint32_t>(chunk.type), chunk.length);
+        
 
         switch(chunk.type) {
 
@@ -56,7 +62,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     ret = inflateInit(&zstr);
 
     if(ret != Z_OK) {
-        std::println("Error initializing zlib stream: {}", ret);
+        Logger::log(LOG_LEVEL::ERROR, "Error initializing zlib stream: {}", ret);
         exit(ret);
     }
 
@@ -64,13 +70,14 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
         ret = inflate(&zstr, Z_NO_FLUSH);
 
         if(ret != Z_OK && ret != Z_STREAM_END) {
-            std::println("Inflate error encountered : {}", ret);
+            Logger::log(LOG_LEVEL::ERROR, "Inflate error encountered : {}", ret);
+            exit(ret);
         }
     }
 
     ret = inflateEnd(&zstr);
     if(ret != Z_OK) {
-        std::println("I shit pant while finishing inflating: {}", ret);
+        Logger::log(LOG_LEVEL::ERROR, "I shit pant while finishing inflating: {}", ret);
         exit(ret);
     }
 
@@ -174,7 +181,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
     delete[] dbuf;
-    D(std::println("Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
+    D(Logger::log(LOG_LEVEL::INFO, "Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
 
     return img;
 }

@@ -1,9 +1,10 @@
 #include <ivmg/ivmg.hpp>
-#include <stdexcept>
+#include "Logger.hpp"
 #include "utils.hpp"
 
 using namespace ivmg;
 
+LOG_LEVEL Logger::level = LOG_LEVEL::WARNING;
 
 Image ivmg::open(std::string imgpath) {
     std::ifstream file(imgpath, std::ios::binary | std::ios::ate);
@@ -14,8 +15,10 @@ Image ivmg::open(std::string imgpath) {
     char magic_buffer[max_magic_length];
 
 
-    if(!file.read(magic_buffer, max_magic_length))
-        throw std::runtime_error(std::format("Error reading {} bytes from {}", max_magic_length, imgpath));
+    if(!file.read(magic_buffer, max_magic_length)) {
+        Logger::log(LOG_LEVEL::ERROR, "Error reading {} bytes from {}", max_magic_length, imgpath);
+        exit(1);
+    }
 
     uint8_t* file_buffer;
     for(auto& [ext, mag] : magics) {
@@ -25,11 +28,14 @@ Image ivmg::open(std::string imgpath) {
             file.read(reinterpret_cast<char*>(file_buffer), len-mlen);
             file.close();
 
-            if(!avail_decoders.contains(ext)) 
-                throw std::runtime_error("Ivmg doesn't support decoding images of this type yet");
+            if(!avail_decoders.contains(ext)) {
+                Logger::log(LOG_LEVEL::ERROR, "Ivmg does not support this type of images yet");
+                exit(1);
+            }
 
             return avail_decoders.at(ext)(file_buffer, len-mlen);
         }
     }
-    throw std::runtime_error("Unknown format");
+    Logger::log(LOG_LEVEL::ERROR, "Unknown format");
+    exit(1);
 };
