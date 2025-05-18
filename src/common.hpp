@@ -8,6 +8,8 @@
 #include "codecs/png.hpp"
 #include "codecs/qoi.hpp"
 
+const uint8_t BYTE_PER_PIXEL = 4;  // 4 channels @ 8 bits
+
 enum class Formats : uint8_t {
     PNG,
     QOI
@@ -27,5 +29,5 @@ const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
 
 typedef std::function<void(const Image&, std::string)> Encoder_fn;
 const std::unordered_map<Formats, Encoder_fn> encoders = {
-    { Formats::QOI, QOI::encode}
+    { Formats::QOI, EncodeQOI}
 };

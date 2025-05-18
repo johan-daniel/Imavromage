@@ -8,8 +8,6 @@ using namespace ivmg::filt;
 
 namespace ivmg {
 
-const uint8_t BYTE_PER_PIXEL = 4;  // 4 channels @ 8 bits
-
 class Image {
 
     public:
