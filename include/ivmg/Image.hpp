@@ -8,14 +8,7 @@ using namespace ivmg::filt;
 
 namespace ivmg {
 
-
-union Pixel {
-    struct {
-        uint8_t r, g, b, a;
-    };
-    uint8_t rgba[4];
-};
-
+const uint8_t BYTE_PER_PIXEL = 4;  // 4 channels @ 8 bits
 
 class Image {
 
@@ -36,6 +29,7 @@ class Image {
         // Image operator>>(Filter f) {
         //     return *this | f;
         // }
+
 
         inline void save(std::string filepath) {
             std::ofstream outppm(filepath, std::ios::binary);

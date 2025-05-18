@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <string>
+#include <print>
 
 enum class LOG_LEVEL : uint8_t {
     NONE,

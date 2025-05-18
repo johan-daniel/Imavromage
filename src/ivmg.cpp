@@ -1,6 +1,7 @@
 #include <ivmg/ivmg.hpp>
+#include <cstring>
 #include "Logger.hpp"
-#include "utils.hpp"
+#include "common.hpp"
 
 using namespace ivmg;
 
