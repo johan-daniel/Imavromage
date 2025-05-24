@@ -1,7 +1,12 @@
 #include <ivmg/ivmg.hpp>
 #include <cstring>
+#include <fstream>
+#include <stdexcept>
 #include "Logger.hpp"
 #include "common.hpp"
+
+#include "codecs/codecs.hpp"
+#include "ivmg/Formats.hpp"
 
 using namespace ivmg;
 
@@ -40,3 +45,19 @@ Image ivmg::open(std::string imgpath) {
     Logger::log(LOG_LEVEL::ERROR, "Unknown format");
     exit(1);
 };
+
+
+
+void ivmg::save(const Image &img, const std::filesystem::path imgpath) {
+    Formats target;
+
+    try {
+        target = ext2format.at(imgpath.extension().string());
+    } 
+    catch(std::out_of_range e){}
+
+    if(encoders.contains(target))
+        encoders.at(target)(img, imgpath);
+    else
+        Logger::log(LOG_LEVEL::ERROR, "I shit pant while trying to encode {} image. SoonTM trust", imgpath.extension().string());
+}

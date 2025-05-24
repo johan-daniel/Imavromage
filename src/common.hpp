@@ -3,10 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
-#include <functional>
-
-#include "codecs/png.hpp"
-#include "codecs/qoi.hpp"
+#include <ivmg/Formats.hpp>
 
 
 namespace ivmg {
@@ -20,14 +17,6 @@ const std::unordered_map<Formats, std::vector<uint8_t> > magics = {
 
 const uint8_t max_magic_length = 8;
 
-typedef std::function<Image(uint8_t*, size_t)> Decoder_fn;
-const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
-    { Formats::PNG, DecodePNG }
-};
 
-typedef std::function<void(const Image&, std::string)> Encoder_fn;
-const std::unordered_map<Formats, Encoder_fn> encoders = {
-    { Formats::QOI, EncodeQOI }
-};
 
 }

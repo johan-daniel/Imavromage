@@ -4,7 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <ivmg/Image.hpp>
-#include "../macros.hpp"
+#include "macros.hpp"
 
 
 namespace ivmg {

@@ -1,11 +1,7 @@
 #pragma once
 
-#include <string>
-#include <fstream>
 #include <unordered_map>
 #include <vector>
-
-#include "formats.hpp"
 #include "filters/Filter.hpp"
 
 using namespace ivmg::filt;
@@ -47,21 +43,6 @@ class Image {
 
         Image operator|(Filter f) {
             return Image(0, 0, {}); // Placeholder
-        }
-
-
-        inline void save(std::string filepath, Formats target) {
-            std::ofstream outppm(filepath, std::ios::binary);
-            outppm << "P7\n"
-                << "WIDTH " << width << "\n"
-                << "HEIGHT " << height << "\n"
-                << "DEPTH " << 4 << "\n"
-                << "MAXVAL 255\n"
-                << "TUPLTYPE RGB_ALPHA\n"
-                << "ENDHDR" << std::endl;
-
-            outppm.write(reinterpret_cast<char*>(data), height*width*4);
-            outppm.close();
         }
 
 };
