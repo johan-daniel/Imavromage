@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <zlib.h>
 
-Image DecodePNG(uint8_t* file_buffer, size_t length) {
+Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     // D(std::println("Decoding PNG");)
     Logger::log(LOG_LEVEL::INFO, "Decoding PNG of size {} bytes", length);
 
@@ -187,7 +187,7 @@ Image DecodePNG(uint8_t* file_buffer, size_t length) {
 }
 
 
-ChunkPNG ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
+ChunkPNG ivmg::ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
     ChunkPNG chunk {};
     chunk.length = std::byteswap(Read<uint32_t>(data, idx, dlen));
     chunk.type = static_cast<ChunkType>(std::byteswap(Read<uint32_t>(data, idx, dlen)));
@@ -200,7 +200,7 @@ ChunkPNG ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
 
 
 
-void DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
+void ivmg::DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
     size_t idx {0};
     png.w = std::byteswap(Read<uint32_t>(data, idx, chunk_len));
     png.h = std::byteswap(Read<uint32_t>(data, idx, chunk_len));
@@ -211,7 +211,7 @@ void DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
     png.interlace_method = Read<uint8_t>(data, idx, chunk_len);
 }
 
-int16_t PaethPredictor(uint8_t a, uint8_t b, uint8_t c) {
+int16_t ivmg::PaethPredictor(uint8_t a, uint8_t b, uint8_t c) {
     const int16_t p = a + b - c;
     const int16_t pa = std::abs(p - a);
     const int16_t pb = std::abs(p - b);

@@ -1,3 +1,4 @@
+#include "ivmg/formats.hpp"
 #include <print>
 #include <ivmg/ivmg.hpp>
 #include <ivmg/Image.hpp>
@@ -14,7 +15,7 @@ int main(int argc, char** argv) {
 
     const std::string filepath(argv[1]);
     ivmg::Image img = ivmg::open(filepath);
-    img.save("../resources/out.pam");
+    img.save("../resources/out.pam", ivmg::Formats::PNG);
 
 
     return 0;

@@ -6,7 +6,8 @@
 #include <ivmg/Image.hpp>
 #include "../macros.hpp"
 
-using namespace ivmg;
+
+namespace ivmg {
 
 
 enum class ChunkType : uint32_t {
@@ -65,3 +66,5 @@ ChunkPNG ReadChunk(uint8_t* file_buffer, size_t &read_idx, size_t data_length);
 void DecodeIHDR(uint8_t* data, uint32_t chunk_len, PNG_IMG& png);
 Image DecodePNG(uint8_t* file_buffer, size_t length);
 int16_t PaethPredictor(uint8_t a, uint8_t b, uint8_t c);
+
+}

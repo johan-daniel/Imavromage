@@ -8,12 +8,10 @@
 #include "codecs/png.hpp"
 #include "codecs/qoi.hpp"
 
-const uint8_t BYTE_PER_PIXEL = 4;  // 4 channels @ 8 bits
 
-enum class Formats : uint8_t {
-    PNG,
-    QOI
-};
+namespace ivmg {
+
+const uint8_t BYTE_PER_PIXEL = 4;  // 4 channels @ 8 bits
 
 const std::unordered_map<Formats, std::vector<uint8_t> > magics = {
     { Formats::PNG, { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } },
@@ -29,5 +27,7 @@ const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
 
 typedef std::function<void(const Image&, std::string)> Encoder_fn;
 const std::unordered_map<Formats, Encoder_fn> encoders = {
-    { Formats::QOI, EncodeQOI}
+    { Formats::QOI, EncodeQOI }
 };
+
+}
