@@ -134,7 +134,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
             D(u++;)
 
             // Take the first line as is
-            if(write_idx <= scanline_size) {
+            if(write_idx < scanline_size - 1) {
                 std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
                 write_idx += scanline_size-1;
                 continue;
@@ -153,7 +153,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
                 const uint16_t left = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
-                const uint16_t up = (write_idx <= scanline_size) ? 0 : img.data[write_idx - scanline_size + 1];
+                const uint16_t up = (write_idx < scanline_size - 1) ? 0 : img.data[write_idx - scanline_size + 1];
                 img.data[write_idx++] = (scanline_buf[sl_idx + 1] + ((left + up) >> 1)) % 256;
             }
 

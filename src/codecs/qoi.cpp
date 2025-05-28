@@ -2,12 +2,13 @@
 #include "common.hpp"
 #include <bit>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 
 using namespace ivmg;
 
 
-void ivmg::EncodeQOI(const Image &img, std::string outfile) {
+void ivmg::EncodeQOI(const Image &img, const std::filesystem::path& outfile) {
 
     std::ofstream out_file(outfile, std::ios::binary);
 

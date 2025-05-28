@@ -2,8 +2,8 @@
 #include "common.hpp"
 #include <fstream>
 
-void ivmg::EncodePAM(const Image &img, std::string outfile) {
-    std::ofstream outppm(outfile.append(".pam"), std::ios::binary);
+void ivmg::EncodePAM(const Image &img, const std::filesystem::path& outfile) {
+    std::ofstream outppm(outfile, std::ios::binary);
     outppm << "P7\n"
         << "WIDTH " << img.width << "\n"
         << "HEIGHT " << img.height << "\n"
