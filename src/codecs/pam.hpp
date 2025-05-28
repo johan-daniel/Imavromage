@@ -1,11 +1,11 @@
 #pragma once
 
+#include <filesystem>
 #include <ivmg/Image.hpp>
-#include <string>
 
 namespace ivmg {
 
-void EncodePAM(const Image& img, std::string outfile);
+void EncodePAM(const Image& img, const std::filesystem::path& outfile);
 
 
 }

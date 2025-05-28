@@ -48,7 +48,7 @@ Image ivmg::open(std::string imgpath) {
 
 
 
-void ivmg::save(const Image &img, const std::filesystem::path imgpath) {
+void ivmg::save(const Image &img, const std::filesystem::path &imgpath) {
     Formats target;
 
     try {

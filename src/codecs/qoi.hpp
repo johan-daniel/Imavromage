@@ -4,7 +4,7 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
-#include <string>
+#include <filesystem>
 
 namespace ivmg {
 
@@ -30,7 +30,7 @@ struct qoi_header {
 } __attribute__((packed));
 
 
-void EncodeQOI(const Image& img, std::string outfile);
+void EncodeQOI(const Image& img, const std::filesystem::path& outfile);
 
 
 }

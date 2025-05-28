@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <ivmg/Image.hpp>
 #include <ivmg/Formats.hpp>
@@ -20,7 +21,7 @@ const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
 };
 
 // Encoder functions registration
-typedef std::function<void(const Image&, std::string)> Encoder_fn;
+typedef std::function<void(const Image&, const std::filesystem::path&)> Encoder_fn;
 const std::unordered_map<Formats, Encoder_fn> encoders = {
     { Formats::QOI, EncodeQOI },
     { Formats::PAM, EncodePAM }
