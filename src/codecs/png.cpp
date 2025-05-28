@@ -23,7 +23,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
 
 
         Logger::log(LOG_LEVEL::INFO, "Got chunk {:#x} of length {} bytes", static_cast<uint32_t>(chunk.type), chunk.length);
-        
+
 
         switch(chunk.type) {
 
@@ -87,7 +87,10 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     uint8_t* outbuf = new uint8_t[png.w * png.h * 4];   // ivmg images are RGBA
     Image img (png.w, png.h, outbuf);
 
-    size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
+
+    const size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
+    uint8_t* scanline_buf = new uint8_t[scanline_size];
+
 
     pxl_idx = 0;
 
@@ -102,7 +105,6 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     size_t write_idx = 0;
 
     while(pxl_idx < dbuf_len) {
-        uint8_t scanline_buf[scanline_size];
         std::memcpy(scanline_buf, dbuf + pxl_idx, scanline_size);
         pxl_idx += scanline_size;
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
@@ -181,6 +183,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     }
 
     delete[] dbuf;
+    delete[] scanline_buf;
     D(Logger::log(LOG_LEVEL::INFO, "Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
 
     return img;
@@ -194,7 +197,7 @@ ChunkPNG ivmg::ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
     chunk.data = data + idx;
     idx += chunk.length;
     chunk.crc = std::byteswap(Read<uint32_t>(data, idx, dlen));
-    
+
     return chunk;
 }
 

@@ -51,7 +51,7 @@ struct PNG_IMG {
     uint8_t filter_method;
     uint8_t interlace_method;
     std::vector<uint8_t> compressed_data;
-} __attribute__((packed));
+};
 
 enum class PNG_FILT_TYPE : uint8_t {
     NONE = 0,
