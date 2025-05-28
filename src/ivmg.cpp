@@ -1,7 +1,6 @@
 #include <ivmg/ivmg.hpp>
 #include <cstring>
 #include <fstream>
-#include <stdexcept>
 #include "Logger.hpp"
 #include "common.hpp"
 
@@ -48,14 +47,7 @@ Image ivmg::open(std::string imgpath) {
 
 
 
-void ivmg::save(const Image &img, const std::filesystem::path &imgpath) {
-    Formats target;
-
-    try {
-        target = ext2format.at(imgpath.extension().string());
-    } 
-    catch(std::out_of_range e){}
-
+void ivmg::save(const Image &img, const std::filesystem::path &imgpath, Formats target) {
     if(encoders.contains(target))
         encoders.at(target)(img, imgpath);
     else
