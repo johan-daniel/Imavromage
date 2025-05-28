@@ -8,13 +8,13 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": ["../resources/testup.png"],
+            "args": ["-i", "resources/test.png", "-o", "resources/out.pam"],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/",
-            "environment": [],
-            "externalConsole": false,
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/${config:mesonbuild.buildFolder}/meson-vscode.env",
+            "program": "${workspaceFolder}/${config:mesonbuild.buildFolder}/cli/ivmg-cli",
             "MIMode": "gdb",
+            "preLaunchTask": "Meson: Build src/ivmg:shared_library",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

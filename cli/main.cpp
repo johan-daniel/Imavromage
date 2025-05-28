@@ -9,9 +9,9 @@
 int main(int argc, char** argv) {
 
     argparse::ArgumentParser program("ivmg-cli");
-    program.add_argument("input")
-        .help("specify the input file (or - for stdin)")
-        .default_value("-");
+    program.add_argument("-i", "--input")
+        .help("specify the input file")
+        .required();
 
     program.add_argument("-o", "--output")
         .help("specify the output file (or - for stdout)")
@@ -26,12 +26,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::string input_file = program.get<std::string>("input");
-    if(input_file == "-") 
-        input_file = "/dev/stdin";
+    std::string input_file = program.get<std::string>("--input");
 
     std::string output_file = program.get<std::string>("--output");
-    if(output_file == "-") 
+    if(output_file == "-")
         output_file = "/dev/stdout";
 
     ivmg::Image img = ivmg::open(input_file);
