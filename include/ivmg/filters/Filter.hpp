@@ -8,12 +8,17 @@ namespace filt {
 
 class Filter {
     public:
-        const uint16_t ksize;
-        const uint8_t* kernel;
+        uint16_t ksize;
+        uint16_t radius;
+        double* kernel;
 
-        Filter(uint16_t ksize, uint8_t* k): ksize(ksize), kernel(k) {}
+        Filter(uint16_t ks): ksize(ks % 2 != 0 ? ks : ks + 1),
+            radius(static_cast<uint16_t>(ksize / 2)),
+            kernel(new double[ksize * ksize])
+        {
+        }
 
-        virtual ~Filter() {
+        ~Filter() {
             delete[] kernel;
         }
 };

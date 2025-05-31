@@ -1,4 +1,5 @@
 #include "argparse.hpp"
+#include "ivmg/filters/GaussianBlur.hpp"
 #include <ivmg/ivmg.hpp>
 #include <ivmg/Image.hpp>
 #include <ivmg/Formats.hpp>
@@ -33,7 +34,8 @@ int main(int argc, char** argv) {
         output_file = "/dev/stdout";
 
     ivmg::Image img = ivmg::open(input_file);
-    ivmg::save(img, output_file, ivmg::Formats::PAM);
+    ivmg::Image img2 = img | GaussianBlur(5);
+    ivmg::save(img2, output_file, ivmg::Formats::PAM);
 
 
     return 0;

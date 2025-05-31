@@ -84,8 +84,8 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
 
 
     // Reverse the filters
-    uint8_t* outbuf = new uint8_t[png.w * png.h * 4];   // ivmg images are RGBA
-    Image img (png.w, png.h, outbuf);
+    // uint8_t* outbuf = new uint8_t[png.w * png.h * 4];   // ivmg images are RGBA
+    Image img (png.w, png.h);
 
 
     const size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
