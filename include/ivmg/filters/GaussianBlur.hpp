@@ -15,7 +15,6 @@ public:
 
         uint32_t sum = 0;
 
-
         // Compute the kernel values
         for(size_t i = 0; i < ksize * ksize; i++) {
             const int16_t x = i % ksize - radius;

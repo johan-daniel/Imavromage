@@ -1,7 +1,16 @@
 #pragma once
 
+#include <cstdint>
+#include <cstring>
 #include <unordered_map>
+#include <vector>
 #include "filters/Filter.hpp"
+
+
+inline std::pair<int32_t, int32_t> GetCoordsInFlatArray(size_t idx, size_t width) {
+    return { idx % width, idx / width };
+}
+
 
 using namespace ivmg::filt;
 
@@ -17,8 +26,13 @@ enum class ColorType : uint8_t {
 
 const std::unordered_map<ColorType, uint8_t> ChannelNb4Type {
     { ColorType::RGBA, 4 },
-    { ColorType::RGB, 3 },
-    { ColorType::YUV, 3 }
+    { ColorType::RGB,  3 },
+    { ColorType::YUV,  3 }
+};
+
+union Pixel {
+    uint8_t r,g,b,a;
+    uint8_t c[4];
 };
 
 
@@ -26,8 +40,8 @@ class Image {
 
 
     public:
-        uint32_t width;
-        uint32_t height;
+        uint32_t width;     // In pixels  
+        uint32_t height;    // In pixels
         ColorType color_type;
         uint8_t* data;
 
@@ -40,23 +54,36 @@ class Image {
 
 
         Image operator|(const Filter& f) {
-            Image out {width, height};
-            uint8_t cnb = ChannelNb4Type.at(color_type);
-            const auto width_bytes = width * cnb;
+            Image out { width, height };
+            uint8_t channel_nb = ChannelNb4Type.at(color_type);
+            const uint32_t width_bytes = width * channel_nb;
 
-            for(size_t pxl = 0; pxl < width_bytes * height; pxl += cnb) {
-                const int16_t x = pxl % width_bytes;
-                const int16_t y = pxl / width_bytes;
+            std::vector<uint16_t> pxl_tmp(channel_nb);
 
+            // We iterate pixel over pixel
+            for(size_t i = 0; i < width_bytes * height; i += channel_nb) {
+                auto [x, y] = GetCoordsInFlatArray(i, width_bytes);
+                x /= channel_nb;
 
-                for(int xr = -f.radius; xr < f.radius; xr++) {
-                    for(int yr = -f.radius; yr < f.radius; yr++) {
-                        if( (x + xr < 0) || (y + yr < 0) ) continue;
-                        for(size_t c = 0; c < cnb; c++) {
-                            // out.data[i + c] += data[i + c + r * width * cnb] * f.kernel[r + r2 + 2 * f.radius];
-                            auto imgdata = data[pxl + c + (xr * width_bytes) + yr] * f.kernel[yr * f.radius + xr];
-                            if(c == 3) out.data[pxl + c] = 255;
-                        }
+                pxl_tmp = { 0, 0, 0, 0 };
+
+                for(int k = 0; k < f.ksize * f.ksize; k++) {
+                    auto [kx, ky] = GetCoordsInFlatArray(k, f.ksize);
+                    kx -= f.radius;
+                    ky -= f.radius;
+
+                    if( (x + kx < 0) || (y + ky < 0) 
+                      || (x + kx >= width) || (y + ky >= height) ) continue;
+
+                    for(size_t c = 0; c < channel_nb; c++) {
+                        auto iidx = ((y + ky) * width_bytes + x + kx) + c;
+                        auto kidx = ky * f.ksize + kx;
+
+                        auto imgdata = data[iidx];
+                        auto kval = f.kernel[kidx];
+
+                        pxl_tmp[c] += imgdata * kval;
+                        if(c == 0 || c == 3) out.data[i + c] = 255;
                     }
                 }
             }
