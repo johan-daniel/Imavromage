@@ -34,8 +34,7 @@ int main(int argc, char** argv) {
         output_file = "/dev/stdout";
 
     ivmg::Image img = ivmg::open(input_file);
-    ivmg::Image img2 = img | GaussianBlur(5);
-    ivmg::save(img, "resources/wtf.pam", ivmg::Formats::PAM);
+    ivmg::Image img2 = img | GaussianBlur(7, 20);
     ivmg::save(img2, output_file, ivmg::Formats::PAM);
 
 

@@ -3,6 +3,7 @@
 #include "Logger.hpp"
 #include <ivmg/Image.hpp>
 #include <cstring>
+#include <utility>
 
 using namespace ivmg;
 
@@ -23,3 +24,8 @@ T Read(uint8_t* data, size_t& idx, size_t data_length) {
     Logger::log(lvl, "Attempted to read {} bytes @ {:#x}, did read {}", read_size_attempt, reinterpret_cast<std::uintptr_t>(data+idx), read_size_actual);
     return dest;
 }
+
+
+// inline std::pair<size_t, size_t> GetCoordsInFlatArray(size_t idx, size_t width) {
+//     return { idx % width, idx / width };
+// }
