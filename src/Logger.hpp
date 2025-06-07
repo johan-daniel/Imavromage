@@ -9,6 +9,7 @@
 
 enum class LOG_LEVEL : uint8_t {
     NONE,
+    DEBG,
     INFO,
     WARNING,
     ERROR,
@@ -16,6 +17,7 @@ enum class LOG_LEVEL : uint8_t {
 };
 
 const std::unordered_map<LOG_LEVEL, std::string> log_level_to_str {
+    { LOG_LEVEL::DEBG, "[DEBUG] "},
     { LOG_LEVEL::INFO, "[INFO] " },
     { LOG_LEVEL::WARNING, "[WARNING] " },
     { LOG_LEVEL::ERROR, "[ERROR] " },
@@ -28,7 +30,7 @@ class Logger {
 
         template <typename... Args>
         inline static void log(LOG_LEVEL lvl, const std::string &msg, Args&&... args) {
-            if(lvl < level) return;
+            if(lvl > level) return;
             auto formated_msg = std::vformat(msg, std::make_format_args(args...));
             std::println((lvl >= LOG_LEVEL::ERROR) ? std::cerr : std::cout, "{}{}", log_level_to_str.at(lvl), std::vformat(msg, std::make_format_args(args...)));
         }

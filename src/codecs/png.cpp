@@ -1,7 +1,9 @@
+#include "ivmg/Image.hpp"
 #include "utils.hpp"
 #include "Logger.hpp"
 #include "png.hpp"
 #include <bit>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <zlib.h>
@@ -9,6 +11,7 @@
 Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     // D(std::println("Decoding PNG");)
     Logger::log(LOG_LEVEL::INFO, "Decoding PNG of size {} bytes", length);
+    auto start = std::chrono::high_resolution_clock::now();
 
     PNG_IMG png {};
     size_t pxl_idx {0};
@@ -113,10 +116,18 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
 
         case PNG_FILT_TYPE::NONE: {
             D(n++;)
+            
+            std::vector<uint8_t> linebuf(png.w * 4, 255);
+            const uint8_t padding_nb = 4 - channel_nb.at(png.color_type);
+
+            for(size_t i = 1; i < scanline_size-1; i += bpp) {
+                const auto ipxl = (i / bpp) * (bpp + padding_nb);
+                std::memcpy(linebuf.data() + ipxl, scanline_buf + i, bpp);
+            }
 
             // Just copy everything
-            std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
-            write_idx += scanline_size-1;
+            std::memcpy(img.data + write_idx, linebuf.data(), linebuf.size());
+            write_idx += linebuf.size();
 
             break;
         }
@@ -185,7 +196,8 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     delete[] dbuf;
     delete[] scanline_buf;
     D(Logger::log(LOG_LEVEL::INFO, "Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
-
+    auto end = std::chrono::high_resolution_clock::now();
+    std::println("Decoded PNG of size {}x{} in {}", png.w, png.h, std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
     return img;
 }
 

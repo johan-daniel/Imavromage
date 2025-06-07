@@ -7,5 +7,5 @@ ivmg_lib = library(
   dependencies: [zlib_dep],
   install: true,
   version: meson.project_version(),
-  cpp_args: get_option('buildtype') == 'debug' ? ['-DDEBUG'] : [],
+  cpp_args: get_option('buildtype') == 'debug' ? ['-DDEBUG'] : ['-O3'],
 )

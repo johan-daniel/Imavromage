@@ -9,7 +9,7 @@
 
 using namespace ivmg;
 
-LOG_LEVEL Logger::level = LOG_LEVEL::WARNING;
+LOG_LEVEL Logger::level = LOG_LEVEL::NONE;
 
 Image ivmg::open(std::string imgpath) {
     std::ifstream file(imgpath, std::ios::binary | std::ios::ate);

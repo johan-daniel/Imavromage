@@ -20,7 +20,7 @@ T Read(uint8_t* data, size_t& idx, size_t data_length) {
     std::memcpy(&dest, data+idx, read_size_actual);
     idx += read_size_actual;
 
-    LOG_LEVEL lvl = (read_size_attempt == read_size_actual) ? LOG_LEVEL::INFO : LOG_LEVEL::WARNING;
+    LOG_LEVEL lvl = (read_size_attempt == read_size_actual) ? LOG_LEVEL::DEBG : LOG_LEVEL::WARNING;
     Logger::log(lvl, "Attempted to read {} bytes @ {:#x}, did read {}", read_size_attempt, reinterpret_cast<std::uintptr_t>(data+idx), read_size_actual);
     return dest;
 }
