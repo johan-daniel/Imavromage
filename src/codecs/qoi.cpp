@@ -13,8 +13,8 @@ void ivmg::EncodeQOI(const Image &img, const std::filesystem::path& outfile) {
     std::ofstream out_file(outfile, std::ios::binary);
 
     qoi_header hdr {
-        .width = std::byteswap(img.width),
-        .height = std::byteswap(img.height),
+        .width = std::byteswap(img.width()),
+        .height = std::byteswap(img.height()),
         .channels = 4,
         .colorspace = 1
     };
@@ -28,8 +28,8 @@ void ivmg::EncodeQOI(const Image &img, const std::filesystem::path& outfile) {
 
     std::array<Color, 64> pxl_cache {};
 
-    for(size_t i = 0; i < img.width * img.height; i += BYTE_PER_PIXEL) {
-        current_pxl = { img.data[i], img.data[i+1], img.data[i+2], img.data[i+3] };
+    for(size_t i = 0; i < img.width() * img.height(); i += BYTE_PER_PIXEL) {
+        current_pxl = { img.get_raw_handle()[i], img.get_raw_handle()[i+1], img.get_raw_handle()[i+2], img.get_raw_handle()[i+3] };
 
         if(current_pxl == prev_pxl && run++ < 62) continue;
         assert(run <= 62);

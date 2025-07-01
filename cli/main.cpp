@@ -5,6 +5,7 @@
 #include <ivmg/Image.hpp>
 #include <ivmg/Formats.hpp>
 #include <getopt.h>
+#include <print>
 
 
 
@@ -36,9 +37,9 @@ int main(int argc, char** argv) {
 
     ivmg::Image img = ivmg::open(input_file);
     auto s = std::chrono::high_resolution_clock::now();
-    ivmg::Image img2 = img | GaussianBlur(20, 50);
+    ivmg::Image img2 = img | GaussianBlur(7, 100);
     auto e = std::chrono::high_resolution_clock::now();
-    std::println("Applied Gaussian blur with k=20 and s=50 in {}", std::chrono::duration_cast<std::chrono::milliseconds>(e-s));
+    std::println("Applied Gaussian blur with k=7 and s=100 in {}", std::chrono::duration_cast<std::chrono::milliseconds>(e-s));
     ivmg::save(img2, output_file, ivmg::Formats::PAM);
 
 

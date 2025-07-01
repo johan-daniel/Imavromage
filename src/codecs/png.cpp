@@ -126,7 +126,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
             }
 
             // Just copy everything
-            std::memcpy(img.data + write_idx, linebuf.data(), linebuf.size());
+            std::memcpy(img.get_raw_handle() + write_idx, linebuf.data(), linebuf.size());
             write_idx += linebuf.size();
 
             break;
@@ -136,8 +136,8 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
             D(s++;)
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const uint8_t left = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
-                img.data[write_idx++] = (left + scanline_buf[sl_idx + 1]) % 256;
+                const uint8_t left = (sl_idx < bpp) ? 0 : img.get_raw_handle()[write_idx - bpp];    // Take the first pixel as is
+                img.get_raw_handle()[write_idx++] = (left + dbuf[pxl_idx + sl_idx + 1]) % 256;
             }
 
             break;
@@ -148,14 +148,14 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
 
             // Take the first line as is
             if(write_idx < scanline_size - 1) {
-                std::memcpy(img.data + write_idx, scanline_buf+1, scanline_size-1);
+                std::memcpy(img.get_raw_handle() + write_idx, scanline_buf+1, scanline_size-1);
                 write_idx += scanline_size-1;
                 continue;
             }
 
             for(size_t sl_idx = 1; sl_idx < scanline_size; sl_idx++) {
-                const uint8_t up = img.data[write_idx - scanline_size + 1];
-                img.data[write_idx++] = (up + scanline_buf[sl_idx]) % 256;
+                const uint8_t up = img.get_raw_handle()[write_idx - scanline_size + 1];
+                img.get_raw_handle()[write_idx++] = (up + scanline_buf[sl_idx]) % 256;
             }
 
             break;
@@ -165,9 +165,9 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
             D(a++;)
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const uint16_t left = (sl_idx < bpp) ? 0 : img.data[write_idx - bpp];    // Take the first pixel as is
-                const uint16_t up = (write_idx < scanline_size - 1) ? 0 : img.data[write_idx - scanline_size + 1];
-                img.data[write_idx++] = (scanline_buf[sl_idx + 1] + ((left + up) >> 1)) % 256;
+                const uint16_t left = (sl_idx < bpp) ? 0 : img.get_raw_handle()[write_idx - bpp];    // Take the first pixel as is
+                const uint16_t up = (write_idx < scanline_size - 1) ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1];
+                img.get_raw_handle()[write_idx++] = (scanline_buf[sl_idx + 1] + ((left + up) >> 1)) % 256;
             }
 
             break;
@@ -181,11 +181,11 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
                 const bool first_pixel = sl_idx < bpp;
                 const bool first_scanline = write_idx < scanline_size - 1;
 
-                const uint8_t left = first_pixel ? 0 : img.data[write_idx - bpp];
-                const uint8_t up = first_scanline ? 0 : img.data[write_idx - scanline_size + 1];
-                const uint8_t upleft = (first_pixel || first_scanline) ? 0 : img.data[write_idx - scanline_size + 1 - bpp];
+                const uint8_t left = first_pixel ? 0 : img.get_raw_handle()[write_idx - bpp];
+                const uint8_t up = first_scanline ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1];
+                const uint8_t upleft = (first_pixel || first_scanline) ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1 - bpp];
 
-                img.data[write_idx++] = (PaethPredictor(left, up, upleft) + scanline_buf[sl_idx + 1]) % 256;
+                img.get_raw_handle()[write_idx++] = (PaethPredictor(left, up, upleft) + scanline_buf[sl_idx + 1]) % 256;
             }
 
             break;

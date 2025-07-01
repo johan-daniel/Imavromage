@@ -3,7 +3,6 @@
 #include "Filter.hpp"
 #include <algorithm>
 #include <cstddef>
-#include <print>
 #include "math.h"
 
 namespace ivmg::filt {
