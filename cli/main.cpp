@@ -20,6 +20,16 @@ int main(int argc, char** argv) {
         .help("specify the output file (or - for stdout)")
         .default_value("out.pam");
 
+    program.add_argument("-k", "--ksize")
+        .help("width of the kernel")
+        .scan<'d', int>()
+        .default_value(7);
+
+    program.add_argument("-s", "--sigma")
+        .help("variance of the kernel")
+        .scan<'d', int>()
+        .default_value(100);
+
     try {
         program.parse_args(argc, argv);
     }
@@ -35,11 +45,14 @@ int main(int argc, char** argv) {
     if(output_file == "-")
         output_file = "/dev/stdout";
 
+    int k = program.get<int>("--ksize");
+    int si = program.get<int>("--sigma");
+
     ivmg::Image img = ivmg::open(input_file);
     auto s = std::chrono::high_resolution_clock::now();
-    ivmg::Image img2 = img | GaussianBlur(7, 100);
+    ivmg::Image img2 = img | GaussianBlur(k, si);
     auto e = std::chrono::high_resolution_clock::now();
-    std::println("Applied Gaussian blur with k=7 and s=100 in {}", std::chrono::duration_cast<std::chrono::milliseconds>(e-s));
+    std::println("Applied Gaussian blur with k={} and s={} in {}", k, si, std::chrono::duration_cast<std::chrono::milliseconds>(e-s));
     ivmg::save(img2, output_file, ivmg::Formats::PAM);
 
 

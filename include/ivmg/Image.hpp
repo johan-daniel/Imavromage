@@ -4,21 +4,24 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <sys/types.h>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 #include "filters/Filter.hpp"
-
-
-inline std::pair<int32_t, int32_t> GetCoordsInFlatArray(size_t idx, size_t width) {
-    return { idx % width, idx / width };
-}
+#include "ComputeContext.hpp"
 
 
 using namespace ivmg::filt;
 
 namespace ivmg {
 
+class Image;
+
+//======================================================
+// COLOR TYPE HELPERS
+//======================================================
 
 enum class ColorType : uint8_t {
     RGBA = 0,
@@ -26,13 +29,11 @@ enum class ColorType : uint8_t {
     YUV  = 2
 };
 
-
 const std::unordered_map<ColorType, uint8_t> ChannelNb4Type {
     { ColorType::RGBA, 4 },
     { ColorType::RGB,  3 },
     { ColorType::YUV,  3 }
 };
-
 
 //======================================================
 // PIXEL PROXIES TO MANIPULATE UNDERLYING DATA
@@ -123,6 +124,15 @@ using yuv_t = std::tuple<uint8_t, uint8_t, uint8_t>;
 
 
 //======================================================
+// WORKER STUBS FOR CONVOLUTION
+//======================================================
+void convolve_scalar_worker(const Image& img, const Filter& filter, Image& out, size_t start_pxl, size_t end_pxl);
+
+#ifdef __AVX512F__
+void convolve_avx512_worker(const Image& img, const Filter& filter, Image& out, size_t start_pxl, size_t end_pxl);
+#endif
+
+//======================================================
 // MAIN IMAGE CLASS
 //======================================================
 
@@ -133,21 +143,24 @@ class Image {
         uint32_t w;     // In pixels  
         uint32_t h;    // In pixels
         
-        public:
-            ColorType color_type;
-        // uint8_t* data;
+        friend void convolve_scalar_worker(const Image& img, const Filter& filter, Image& out, size_t start_pxl, size_t end_pxl);
 
-        Image(const uint32_t w, const uint32_t h): data(w * h * 4, 255), w(w), h(h), color_type(ColorType::RGBA)
+    public:
+        ColorType color_type;
+        uint8_t nb_channels;
+
+        Image(const uint32_t w, const uint32_t h, ColorType ct = ColorType::RGBA): data(w * h * ChannelNb4Type.at(ct)), w(w), h(h), color_type(ct)
         {
+            nb_channels = ChannelNb4Type.at(color_type);
         }
-
+        
         // ACCESSORS
         constexpr uint8_t* get_raw_handle() { return data.data(); }
         constexpr const uint8_t* get_raw_handle() const { return data.data(); }
         constexpr uint32_t width() const { return w; }
         constexpr uint32_t height() const { return h; }
         constexpr size_t size_bytes() const { return data.size(); }
-        constexpr size_t size_pixels() const { return data.size() / 4; }      // Assuming RGBA for now
+        constexpr size_t size_pixels() const { return data.size() / ChannelNb4Type.at(color_type); }      // Assuming RGBA for now
 
 
         template <ColorType C>
@@ -167,71 +180,30 @@ class Image {
         }
 
 
-        /**
-        *   Convolution operator
-        */
         Image operator|(const Filter& f) {
+
             Image out { w, h };
-            uint8_t channel_nb = ChannelNb4Type.at(color_type);
+            const size_t num_threads = std::thread::hardware_concurrency();
+            const size_t pixels_per_thread = (w * h) / num_threads;
 
-            std::vector<double> pxl_tmp(channel_nb);
+            auto fn = IvmgCtx::get().cpu_convolution;
+ 
+            {
+                std::vector<std::jthread> threads(num_threads);
 
-            // We iterate pixel over pixel
-            for(size_t i = 0; i < w * h * channel_nb; i += channel_nb) {
-                auto [ix, iy] = GetCoordsInFlatArray(i, w * channel_nb);
-                ix /= channel_nb;
+                for(int i = 0; i < num_threads; i++) {
+                    size_t start = i * pixels_per_thread;
+                    size_t end = (i == num_threads - 1) ? w * h : start + pixels_per_thread;
 
-                std::ranges::fill(pxl_tmp, 0.0);
-
-                for(int k = 0; k < f.ksize * f.ksize; k++) {
-                    auto [kx, ky] = GetCoordsInFlatArray(k, f.ksize);
-                    kx -= f.radius;
-                    ky -= f.radius;
-
-                    const uint32_t kix = ix + kx;
-                    const uint32_t kiy = iy + ky;
-
-                    // Boundary check. Acts as 0 padding.
-                    if( (kix < 0) || (kiy < 0) || (kix >= w) || (kiy >= h) ) continue;
-
-                    for(size_t c = 0; c < channel_nb; c++) {
-                        auto iidx = (kiy * w + kix) * channel_nb + c;
-
-                        pxl_tmp[c] += data[iidx] * f.kernel[k];
-                    }
-                }
-
-                for(size_t c = 0; c < channel_nb; c++) {
-                    out.data[i + c] = static_cast<uint8_t>(std::clamp(pxl_tmp[c], 0.0, 255.0));
+                    threads.emplace_back(convolve_scalar_worker, std::cref(*this), std::cref(f), std::ref(out), start, end);
                 }
             }
 
             return out;
+
         }
 
-        // Image operator|(const Filter& f) {
-        //     Image out { w, h };
-
-        //     for(size_t i = 0; i < w; i++) {
-        //         for(size_t j = 0; j < h; j++) { 
-        //             for(size_t k = 0; k < f.ksize * f.ksize; k++) {
-        //                 const int kx = k % f.ksize - f.radius;
-        //                 const int ky = k / f.ksize - f.radius;
-
-        //                 const int kix = i - kx;
-        //                 const int kjy = j - ky;
-
-        //                 // Boundary check. Acts as 0 padding.
-        //                 if( (kix < 0) || (kjy < 0) || (kix >= w) || (kjy >= h) ) continue;
-
-        //                 out.at<ColorType::RGBA>(i,j) += this->at<ColorType::RGBA>(kix, kjy) * f.kernel[k];
-        //             }
-        //         }
-        //     }
-
-        //     return out;
-        // }
-
+    
 };
 
 
