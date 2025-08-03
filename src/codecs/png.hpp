@@ -1,16 +1,22 @@
 #pragma once
 
+#include <fstream>
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
 #include <ivmg/Image.hpp>
+
+#include "Decoder.hpp"
 #include "macros.hpp"
+#include "utils.hpp"
+
+using namespace ivmg::types;
 
 
 namespace ivmg {
 
 
-enum class ChunkType : uint32_t {
+enum class ChunkType : u32 {
     IHDR = 0x49484452,
     PLTE = 0x504C5445,
     IDAT = 0x49444154,
@@ -19,15 +25,15 @@ enum class ChunkType : uint32_t {
 
 
 struct ChunkPNG {
-    uint32_t length;
+    u32 length;
     ChunkType type;
-    uint32_t crc;
-    uint8_t* data;
+    u32 crc;
+    std::span<u8> data;
 } __attribute__((packed));
 
 
 
-enum class PNG_COLOR_TYPE : uint8_t {
+enum class PNG_COLOR_TYPE : u8 {
     GSC = 0,
     RGB = 2,
     IDX = 3,
@@ -35,7 +41,7 @@ enum class PNG_COLOR_TYPE : uint8_t {
     RGBA = 6
 };
 
-const std::unordered_map<PNG_COLOR_TYPE, uint8_t> channel_nb {
+const std::unordered_map<PNG_COLOR_TYPE, u8> channel_nb {
     { PNG_COLOR_TYPE::GSC, 1 },
     { PNG_COLOR_TYPE::RGB, 3 },
     { PNG_COLOR_TYPE::GSCA, 2 },
@@ -43,17 +49,7 @@ const std::unordered_map<PNG_COLOR_TYPE, uint8_t> channel_nb {
 };
 
 
-struct PNG_IMG {
-    uint32_t w, h;
-    uint8_t bit_depth;
-    PNG_COLOR_TYPE color_type;
-    uint8_t compression_method;
-    uint8_t filter_method;
-    uint8_t interlace_method;
-    std::vector<uint8_t> compressed_data;
-};
-
-enum class PNG_FILT_TYPE : uint8_t {
+enum class PNG_FILT_TYPE : u8 {
     NONE = 0,
     SUB = 1,
     UP = 2,
@@ -61,10 +57,34 @@ enum class PNG_FILT_TYPE : uint8_t {
     PAETH = 4
 };
 
+constexpr u8 magic_length = 8;
+constexpr u8 magic[magic_length] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
-ChunkPNG ReadChunk(uint8_t* file_buffer, size_t &read_idx, size_t data_length);
-void DecodeIHDR(uint8_t* data, uint32_t chunk_len, PNG_IMG& png);
-Image DecodePNG(uint8_t* file_buffer, size_t length);
-int16_t PaethPredictor(uint8_t a, uint8_t b, uint8_t c);
+
+class PNG_Decoder : public Decoder {
+
+private:
+    u32 width, height;
+    u8 bit_depth;
+    PNG_COLOR_TYPE color_type;
+    u8 compression_method;
+    u8 filter_method;
+    u8 interlace_method;
+    std::vector<u8> compressed_data;
+
+public:
+    inline PNG_Decoder(): Decoder() {};
+    bool can_decode( std::ifstream& filestream) const override;
+    Image decode(std::ifstream& filestream) override;
+
+private:
+    ChunkPNG ReadChunk(Vec<u8>& file_buffer, size_t &read_idx);
+    void DecodeIHDR(std::span<u8>& data);
+    Image DecodePNG(Vec<u8>& file_buffer, size_t length);
+    int16_t PaethPredictor(u8 a, u8 b, u8 c);
+
+};
+
+
 
 }

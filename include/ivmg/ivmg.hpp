@@ -7,7 +7,7 @@
 namespace ivmg {
 
 
-Image open(std::string imgpath);
+Image open(const std::string& imgpath);
 void save(const Image &img, const std::filesystem::path &imgpath, Formats target);
 
 

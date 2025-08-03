@@ -136,6 +136,9 @@ void convolve_avx512_worker(const Image& img, const Filter& filter, Image& out, 
 // MAIN IMAGE CLASS
 //======================================================
 
+/**
+In memory buffer of raw decoded image data
+*/
 class Image {
 
     private:

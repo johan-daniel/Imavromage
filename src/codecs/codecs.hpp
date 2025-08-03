@@ -1,24 +1,60 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <ivmg/Image.hpp>
 #include <ivmg/Formats.hpp>
+#include <memory>
 #include <unordered_map>
 
 #include "png.hpp"
 #include "qoi.hpp"
 #include "pam.hpp"
+#include "utils.hpp"
+
+using namespace ivmg::types;
 
 namespace ivmg {
 
-// Decoder functions registration
-typedef std::function<Image(uint8_t*, size_t)> Decoder_fn;
-const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
-    { ivmg::Formats::PNG, DecodePNG }
+class Decoder;
+
+enum class IVMG_DEC_ERR {
+    UNKNOWN_FORMAT
 };
+
+
+
+class DecoderRegistry {
+private:
+    // static Vec<Unique<Decoder>> decs;
+
+public:
+    static ResultOr<Image, IVMG_DEC_ERR> decode(std::ifstream& file) {
+        static Vec<Unique<Decoder>> decs;
+
+        if(decs.empty()) {
+            decs.emplace_back(std::make_unique<PNG_Decoder>());
+        }
+
+        for(const auto& d : decs) { 
+            if(d->can_decode(file))
+                return d->decode(file);
+        }
+
+        return std::unexpected(IVMG_DEC_ERR::UNKNOWN_FORMAT);
+    }
+
+};
+
+
+
+// Decoder functions registration
+// typedef std::function<Image(uint8_t*, size_t)> Decoder_fn;
+// const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
+//     { ivmg::Formats::PNG, DecodePNG }
+// };
 
 // Encoder functions registration
 typedef std::function<void(const Image&, const std::filesystem::path&)> Encoder_fn;

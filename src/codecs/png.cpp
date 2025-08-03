@@ -1,43 +1,66 @@
-#include "ivmg/Image.hpp"
-#include "utils.hpp"
 #include "Logger.hpp"
+#include "utils.hpp"
 #include "png.hpp"
-#include <bit>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <fstream>
+#include <ios>
 #include <zlib.h>
 
-Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
+using namespace ivmg;
+
+bool PNG_Decoder::can_decode(std::ifstream& filestream) const {
+    auto startpos = filestream.tellg();
+    char buffer[magic_length] = {0};
+    if(filestream.read(buffer, magic_length) && !filestream.fail() && std::memcmp(buffer, magic, magic_length) == 0) {
+        filestream.seekg(startpos);
+        return true;
+    }
+    return false;
+}
+
+
+Image PNG_Decoder::decode(std::ifstream& filestream) {
+    filestream.seekg(0, std::ios_base::end);
+    const size_t len = filestream.tellg();
+    filestream.seekg(magic_length);
+
+    Vec<u8> vbuffer;
+    vbuffer.resize(len - magic_length);
+
+    filestream.read(reinterpret_cast<char*>(vbuffer.data()), len - magic_length);
+
+    return this->DecodePNG(vbuffer, len - magic_length);
+}
+
+
+Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
     // D(std::println("Decoding PNG");)
     Logger::log(LOG_LEVEL::INFO, "Decoding PNG of size {} bytes", length);
     auto start = std::chrono::high_resolution_clock::now();
 
-    PNG_IMG png {};
     size_t pxl_idx {0};
 
     ChunkPNG chunk {};
 
     do {
-        chunk = ReadChunk(file_buffer, pxl_idx, length);
-        // D(
-        //     std::println("Got chunk {:#x} of length {}", static_cast<uint32_t>(chunk.type), chunk.length);
-        // )
+        chunk = this->ReadChunk(file_buffer, pxl_idx);
 
-
-        Logger::log(LOG_LEVEL::INFO, "Got chunk {:#x} of length {} bytes", static_cast<uint32_t>(chunk.type), chunk.length);
+        Logger::log(LOG_LEVEL::INFO, "Got chunk {:#x} of length {} bytes", static_cast<u32>(chunk.type), chunk.length);
 
 
         switch(chunk.type) {
 
             case ChunkType::IHDR:
-                DecodeIHDR(chunk.data, chunk.length, png);
+                this->DecodeIHDR(chunk.data);
                 break;
 
             case ChunkType::PLTE:
                 break;
             case ChunkType::IDAT:
-                png.compressed_data.insert(png.compressed_data.end(), chunk.data, chunk.data+chunk.length);
+                compressed_data.insert(compressed_data.end(), chunk.data.begin(), chunk.data.end());
                 break;
             case ChunkType::IEND:
                 break;
@@ -46,20 +69,20 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     } while(chunk.type != ChunkType::IEND);
 
 
-    delete[] file_buffer;
-
-    const size_t bpp = channel_nb.at(png.color_type) * png.bit_depth / 8;   // Bytes per pixel
+    const size_t bpp = channel_nb.at(color_type) * bit_depth / 8;   // Bytes per pixel
 
     // Decompress the PNG data using zlib
     // TODO: Implement the Inflate algorithm myself
-    size_t dbuf_len = png.w * png.h * bpp + png.h;
-    uint8_t* dbuf = new uint8_t[dbuf_len];
+    size_t dbuf_len = width * height * bpp + height;
+    // u8* dbuf = new u8[dbuf_len];
+    Vec<u8> dbuf;
+    dbuf.resize(width * height * bpp + height);
 
     z_stream zstr {};
-    zstr.next_out = dbuf;
-    zstr.avail_out = dbuf_len;
-    zstr.next_in = png.compressed_data.data();
-    zstr.avail_in = png.compressed_data.size();
+    zstr.next_out = dbuf.data();
+    zstr.avail_out = dbuf.size();
+    zstr.next_in = compressed_data.data();
+    zstr.avail_in = compressed_data.size();
 
     int ret;
     ret = inflateInit(&zstr);
@@ -87,12 +110,12 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
 
 
     // Reverse the filters
-    // uint8_t* outbuf = new uint8_t[png.w * png.h * 4];   // ivmg images are RGBA
-    Image img (png.w, png.h);
+    // u8* outbuf = new u8[png.w * png.h * 4];   // ivmg images are RGBA
+    Image img (width, height);
 
 
-    const size_t scanline_size = png.w * bpp + 1;     // Width of the image + 1 byte for the filter type
-    uint8_t* scanline_buf = new uint8_t[scanline_size];
+    const size_t scanline_size = width * bpp + 1;     // Width of the image + 1 byte for the filter type
+    u8* scanline_buf = new u8[scanline_size];
 
 
     pxl_idx = 0;
@@ -108,7 +131,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
     size_t write_idx = 0;
 
     while(pxl_idx < dbuf_len) {
-        std::memcpy(scanline_buf, dbuf + pxl_idx, scanline_size);
+        std::memcpy(scanline_buf, dbuf.data() + pxl_idx, scanline_size);
         pxl_idx += scanline_size;
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
 
@@ -117,8 +140,8 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
         case PNG_FILT_TYPE::NONE: {
             D(n++;)
             
-            std::vector<uint8_t> linebuf(png.w * 4, 255);
-            const uint8_t padding_nb = 4 - channel_nb.at(png.color_type);
+            std::vector<u8> linebuf(width * 4, 255);
+            const u8 padding_nb = 4 - channel_nb.at(color_type);
 
             for(size_t i = 1; i < scanline_size-1; i += bpp) {
                 const auto ipxl = (i / bpp) * (bpp + padding_nb);
@@ -136,7 +159,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
             D(s++;)
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
-                const uint8_t left = (sl_idx < bpp) ? 0 : img.get_raw_handle()[write_idx - bpp];    // Take the first pixel as is
+                const u8 left = (sl_idx < bpp) ? 0 : img.get_raw_handle()[write_idx - bpp];    // Take the first pixel as is
                 img.get_raw_handle()[write_idx++] = (left + dbuf[pxl_idx + sl_idx + 1]) % 256;
             }
 
@@ -154,7 +177,7 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
             }
 
             for(size_t sl_idx = 1; sl_idx < scanline_size; sl_idx++) {
-                const uint8_t up = img.get_raw_handle()[write_idx - scanline_size + 1];
+                const u8 up = img.get_raw_handle()[write_idx - scanline_size + 1];
                 img.get_raw_handle()[write_idx++] = (up + scanline_buf[sl_idx]) % 256;
             }
 
@@ -181,11 +204,11 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
                 const bool first_pixel = sl_idx < bpp;
                 const bool first_scanline = write_idx < scanline_size - 1;
 
-                const uint8_t left = first_pixel ? 0 : img.get_raw_handle()[write_idx - bpp];
-                const uint8_t up = first_scanline ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1];
-                const uint8_t upleft = (first_pixel || first_scanline) ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1 - bpp];
+                const u8 left = first_pixel ? 0 : img.get_raw_handle()[write_idx - bpp];
+                const u8 up = first_scanline ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1];
+                const u8 upleft = (first_pixel || first_scanline) ? 0 : img.get_raw_handle()[write_idx - scanline_size + 1 - bpp];
 
-                img.get_raw_handle()[write_idx++] = (PaethPredictor(left, up, upleft) + scanline_buf[sl_idx + 1]) % 256;
+                img.get_raw_handle()[write_idx++] = (this->PaethPredictor(left, up, upleft) + scanline_buf[sl_idx + 1]) % 256;
             }
 
             break;
@@ -193,44 +216,44 @@ Image ivmg::DecodePNG(uint8_t* file_buffer, size_t length) {
         }
     }
 
-    delete[] dbuf;
+    // delete[] dbuf;
     delete[] scanline_buf;
     D(Logger::log(LOG_LEVEL::INFO, "Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
     auto end = std::chrono::high_resolution_clock::now();
-    std::println("Decoded PNG of size {}x{} in {}", png.w, png.h, std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+    std::println("Decoded PNG of size {}x{} in {}", width, height, std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
     return img;
 }
 
 
-ChunkPNG ivmg::ReadChunk(uint8_t* data, size_t& idx, size_t dlen) {
+ChunkPNG PNG_Decoder::ReadChunk(Vec<u8>& data, size_t& idx) {
     ChunkPNG chunk {};
-    chunk.length = std::byteswap(Read<uint32_t>(data, idx, dlen));
-    chunk.type = static_cast<ChunkType>(std::byteswap(Read<uint32_t>(data, idx, dlen)));
-    chunk.data = data + idx;
+    chunk.length = Read<u32, BYTEORDER::BE>(data, idx);
+    chunk.type = static_cast<ChunkType>(Read<u32, BYTEORDER::BE>(data, idx));
+    chunk.data = std::span<u8>(data.begin() + idx, chunk.length);
     idx += chunk.length;
-    chunk.crc = std::byteswap(Read<uint32_t>(data, idx, dlen));
+    chunk.crc = Read<u32, BYTEORDER::BE>(data, idx);
 
     return chunk;
 }
 
 
 
-void ivmg::DecodeIHDR(uint8_t *data, uint32_t chunk_len, PNG_IMG &png) {
+void PNG_Decoder::DecodeIHDR(std::span<u8>& data) {
     size_t idx {0};
-    png.w = std::byteswap(Read<uint32_t>(data, idx, chunk_len));
-    png.h = std::byteswap(Read<uint32_t>(data, idx, chunk_len));
-    png.bit_depth = std::byteswap(Read<uint8_t>(data, idx, chunk_len));
-    png.color_type = static_cast<PNG_COLOR_TYPE>(Read<uint8_t>(data, idx, chunk_len));
-    png.compression_method = Read<uint8_t>(data, idx, chunk_len);
-    png.filter_method = Read<uint8_t>(data, idx, chunk_len);
-    png.interlace_method = Read<uint8_t>(data, idx, chunk_len);
+    width = Read<u32, BYTEORDER::BE>(data, idx);
+    height = Read<u32, BYTEORDER::BE>(data, idx);
+    bit_depth = Read<u8, BYTEORDER::BE>(data, idx);
+    color_type = static_cast<PNG_COLOR_TYPE>(Read<u8>(data, idx));
+    compression_method = Read<u8>(data, idx);
+    filter_method = Read<u8>(data, idx);
+    interlace_method = Read<u8>(data, idx);
 }
 
-int16_t ivmg::PaethPredictor(uint8_t a, uint8_t b, uint8_t c) {
-    const int16_t p = a + b - c;
-    const int16_t pa = std::abs(p - a);
-    const int16_t pb = std::abs(p - b);
-    const int16_t pc = std::abs(p - c);
+i16 PNG_Decoder::PaethPredictor(u8 a, u8 b, u8 c) {
+    const i16 p = a + b - c;
+    const i16 pa = std::abs(p - a);
+    const i16 pb = std::abs(p - b);
+    const i16 pc = std::abs(p - c);
 
     if(pa <= pb && pa <= pc) return a;
     else if(pb <= pc) return b;
