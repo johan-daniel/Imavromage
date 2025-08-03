@@ -32,18 +32,26 @@ Image PNG_Decoder::decode(std::ifstream& filestream) {
 
     filestream.read(reinterpret_cast<char*>(vbuffer.data()), len - magic_length);
 
-    return this->DecodePNG(vbuffer, len - magic_length);
+    return this->DecodePNG(vbuffer);
 }
 
 
-Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
+Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer) {
     // D(std::println("Decoding PNG");)
-    Logger::log(LOG_LEVEL::INFO, "Decoding PNG of size {} bytes", length);
+    Logger::log(LOG_LEVEL::INFO, "Decoding PNG of size {} bytes", file_buffer.size());
     auto start = std::chrono::high_resolution_clock::now();
 
     size_t pxl_idx {0};
-
     ChunkPNG chunk {};
+
+    z_stream zstr {};
+    int ret;
+    ret = inflateInit(&zstr);
+
+    if(ret != Z_OK) {
+        Logger::log(LOG_LEVEL::ERROR, "Error initializing zlib stream: {}", ret);
+        exit(ret);
+    }
 
     do {
         chunk = this->ReadChunk(file_buffer, pxl_idx);
@@ -55,13 +63,28 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
 
             case ChunkType::IHDR:
                 this->DecodeIHDR(chunk.data);
+                zstr.next_out = inflated_data.data();
+                zstr.avail_out = inflated_data.size();
                 break;
 
             case ChunkType::PLTE:
                 break;
-            case ChunkType::IDAT:
-                compressed_data.insert(compressed_data.end(), chunk.data.begin(), chunk.data.end());
+            case ChunkType::IDAT: {
+
+                zstr.next_in = chunk.data.data();
+                zstr.avail_in = chunk.data.size();
+
+                do {
+                    ret = inflate(&zstr, Z_NO_FLUSH);
+                    if(ret != Z_OK && ret != Z_STREAM_END) {
+                        Logger::log(LOG_LEVEL::ERROR, "Inflate error encountered : {}", ret);
+                        exit(ret);
+                    }
+                }
+                while(ret != Z_STREAM_END && zstr.avail_in > 0);             
+
                 break;
+            }
             case ChunkType::IEND:
                 break;
 
@@ -69,43 +92,20 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
     } while(chunk.type != ChunkType::IEND);
 
 
-    const size_t bpp = channel_nb.at(color_type) * bit_depth / 8;   // Bytes per pixel
-
-    // Decompress the PNG data using zlib
-    // TODO: Implement the Inflate algorithm myself
-    size_t dbuf_len = width * height * bpp + height;
-    // u8* dbuf = new u8[dbuf_len];
-    Vec<u8> dbuf;
-    dbuf.resize(width * height * bpp + height);
-
-    z_stream zstr {};
-    zstr.next_out = dbuf.data();
-    zstr.avail_out = dbuf.size();
-    zstr.next_in = compressed_data.data();
-    zstr.avail_in = compressed_data.size();
-
-    int ret;
-    ret = inflateInit(&zstr);
-
-    if(ret != Z_OK) {
-        Logger::log(LOG_LEVEL::ERROR, "Error initializing zlib stream: {}", ret);
-        exit(ret);
-    }
-
-    while(ret != Z_STREAM_END) {
-        ret = inflate(&zstr, Z_NO_FLUSH);
-
-        if(ret != Z_OK && ret != Z_STREAM_END) {
-            Logger::log(LOG_LEVEL::ERROR, "Inflate error encountered : {}", ret);
-            exit(ret);
-        }
-    }
-
     ret = inflateEnd(&zstr);
     if(ret != Z_OK) {
         Logger::log(LOG_LEVEL::ERROR, "I shit pant while finishing inflating: {}", ret);
         exit(ret);
     }
+
+
+    // zstr.next_out = inflated_data.data();
+    // zstr.avail_out = inflated_data.size();
+    // zstr.next_in = compressed_data.data();
+    // zstr.avail_in = compressed_data.size();
+
+   
+
 
 
 
@@ -130,8 +130,8 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
 
     size_t write_idx = 0;
 
-    while(pxl_idx < dbuf_len) {
-        std::memcpy(scanline_buf, dbuf.data() + pxl_idx, scanline_size);
+    while(pxl_idx < inflated_data.size()) {
+        std::memcpy(scanline_buf, inflated_data.data() + pxl_idx, scanline_size);
         pxl_idx += scanline_size;
         PNG_FILT_TYPE filt = static_cast<PNG_FILT_TYPE>(scanline_buf[0]);
 
@@ -160,7 +160,7 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
 
             for(size_t sl_idx = 0; sl_idx < scanline_size-1; sl_idx++) {
                 const u8 left = (sl_idx < bpp) ? 0 : img.get_raw_handle()[write_idx - bpp];    // Take the first pixel as is
-                img.get_raw_handle()[write_idx++] = (left + dbuf[pxl_idx + sl_idx + 1]) % 256;
+                img.get_raw_handle()[write_idx++] = (left + inflated_data[pxl_idx + sl_idx + 1]) % 256;
             }
 
             break;
@@ -216,7 +216,7 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer, size_t length) {
         }
     }
 
-    // delete[] dbuf;
+    // delete[] inflated_data;
     delete[] scanline_buf;
     D(Logger::log(LOG_LEVEL::INFO, "Filter count - {} NONE - {} SUB - {} UP - {} AVG - {} PAETH", n,s,u,a,p);)
     auto end = std::chrono::high_resolution_clock::now();
@@ -238,7 +238,7 @@ ChunkPNG PNG_Decoder::ReadChunk(Vec<u8>& data, size_t& idx) {
 
 
 
-void PNG_Decoder::DecodeIHDR(std::span<u8>& data) {
+void PNG_Decoder::DecodeIHDR(std::span<u8> data) {
     size_t idx {0};
     width = Read<u32, BYTEORDER::BE>(data, idx);
     height = Read<u32, BYTEORDER::BE>(data, idx);
@@ -247,7 +247,11 @@ void PNG_Decoder::DecodeIHDR(std::span<u8>& data) {
     compression_method = Read<u8>(data, idx);
     filter_method = Read<u8>(data, idx);
     interlace_method = Read<u8>(data, idx);
+    bpp = channel_nb.at(color_type) * bit_depth / 8;
+    inflated_data.resize(height * width * bpp + height);
 }
+
+
 
 i16 PNG_Decoder::PaethPredictor(u8 a, u8 b, u8 c) {
     const i16 p = a + b - c;

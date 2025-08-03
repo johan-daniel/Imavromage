@@ -3,7 +3,6 @@
 #include <fstream>
 #include <unordered_map>
 #include <vector>
-#include <cstdint>
 #include <ivmg/Image.hpp>
 
 #include "Decoder.hpp"
@@ -29,7 +28,7 @@ struct ChunkPNG {
     ChunkType type;
     u32 crc;
     std::span<u8> data;
-} __attribute__((packed));
+};
 
 
 
@@ -70,7 +69,9 @@ private:
     u8 compression_method;
     u8 filter_method;
     u8 interlace_method;
+    size_t bpp;
     std::vector<u8> compressed_data;
+    Vec<u8> inflated_data;
 
 public:
     inline PNG_Decoder(): Decoder() {};
@@ -79,10 +80,9 @@ public:
 
 private:
     ChunkPNG ReadChunk(Vec<u8>& file_buffer, size_t &read_idx);
-    void DecodeIHDR(std::span<u8>& data);
-    Image DecodePNG(Vec<u8>& file_buffer, size_t length);
-    int16_t PaethPredictor(u8 a, u8 b, u8 c);
-
+    void DecodeIHDR(std::span<u8> data);
+    Image DecodePNG(Vec<u8>& file_buffer);
+    i16 PaethPredictor(u8 a, u8 b, u8 c);
 };
 
 
