@@ -49,11 +49,11 @@ int main(int argc, char** argv) {
     int si = program.get<int>("--sigma");
 
     ivmg::Image img = ivmg::open(input_file);
-    auto s = std::chrono::high_resolution_clock::now();
-    ivmg::Image img2 = img | GaussianBlur(k, si);
-    auto e = std::chrono::high_resolution_clock::now();
-    std::println("Applied Gaussian blur with k={} and s={} in {}", k, si, std::chrono::duration_cast<std::chrono::milliseconds>(e-s));
-    ivmg::save(img2, output_file, ivmg::Formats::PAM);
+    // auto s = std::chrono::high_resolution_clock::now();
+    // ivmg::Image img2 = img | GaussianBlur(k, si);
+    // auto e = std::chrono::high_resolution_clock::now();
+    // std::println("Applied Gaussian blur with k={} and s={} in {}", k, si, std::chrono::duration_cast<std::chrono::milliseconds>(e-s));
+    // ivmg::save(img2, output_file, ivmg::Formats::PAM);
 
 
     return 0;

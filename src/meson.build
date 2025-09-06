@@ -4,14 +4,14 @@ src_files = [
   'codecs/png.cpp', 
   'codecs/qoi.cpp', 
   'convolution.cpp',
-  'ComputeContext.cpp'
+  'ComputeContext.cpp',
 ]
 
 ivmg_lib = library(
   'ivmg',
   sources: src_files,
   include_directories: include_directories('.', 'codecs', '../include'),
-  dependencies: [zlib_dep],
+  dependencies: [zlib_dep, def_dep],
   install: true,
   version: meson.project_version(),
   cpp_args: get_option('buildtype') == 'debug' ? ['-DDEBUG'] : ['-O3', '-march=native'],

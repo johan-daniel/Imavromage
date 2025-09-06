@@ -8,6 +8,7 @@
 #include <fstream>
 #include <ios>
 #include <zlib.h>
+#include <libdeflate.h>
 
 using namespace ivmg;
 
@@ -44,45 +45,24 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer) {
     size_t pxl_idx {0};
     ChunkPNG chunk {};
 
-    z_stream zstr {};
-    int ret;
-    ret = inflateInit(&zstr);
-
-    if(ret != Z_OK) {
-        Logger::log(LOG_LEVEL::ERROR, "Error initializing zlib stream: {}", ret);
-        exit(ret);
-    }
+    Vec<u8> rawidat;
+    rawidat.reserve(file_buffer.size());
 
     do {
         chunk = this->ReadChunk(file_buffer, pxl_idx);
 
         Logger::log(LOG_LEVEL::INFO, "Got chunk {:#x} of length {} bytes", static_cast<u32>(chunk.type), chunk.length);
 
-
         switch(chunk.type) {
 
             case ChunkType::IHDR:
                 this->DecodeIHDR(chunk.data);
-                zstr.next_out = inflated_data.data();
-                zstr.avail_out = inflated_data.size();
                 break;
 
             case ChunkType::PLTE:
                 break;
             case ChunkType::IDAT: {
-
-                zstr.next_in = chunk.data.data();
-                zstr.avail_in = chunk.data.size();
-
-                do {
-                    ret = inflate(&zstr, Z_NO_FLUSH);
-                    if(ret != Z_OK && ret != Z_STREAM_END) {
-                        Logger::log(LOG_LEVEL::ERROR, "Inflate error encountered : {}", ret);
-                        exit(ret);
-                    }
-                }
-                while(ret != Z_STREAM_END && zstr.avail_in > 0);             
-
+                rawidat.append_range(chunk.data);
                 break;
             }
             case ChunkType::IEND:
@@ -91,44 +71,40 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer) {
         }
     } while(chunk.type != ChunkType::IEND);
 
+    libdeflate_decompressor *decompressor = libdeflate_alloc_decompressor();
 
-    ret = inflateEnd(&zstr);
-    if(ret != Z_OK) {
-        Logger::log(LOG_LEVEL::ERROR, "I shit pant while finishing inflating: {}", ret);
-        exit(ret);
+    libdeflate_result result = libdeflate_zlib_decompress(
+        decompressor,
+        rawidat.data(),
+        rawidat.size(),
+        inflated_data.data(),
+        inflated_data.size(),
+        nullptr
+    );
+
+    if(result != LIBDEFLATE_SUCCESS) {
+        std::println(std::cerr, "Deflate died");
+        exit(result);
     }
 
-
-    // zstr.next_out = inflated_data.data();
-    // zstr.avail_out = inflated_data.size();
-    // zstr.next_in = compressed_data.data();
-    // zstr.avail_in = compressed_data.size();
-
-   
-
-
-
+    libdeflate_free_decompressor(decompressor);
 
     // Reverse the filters
-    // u8* outbuf = new u8[png.w * png.h * 4];   // ivmg images are RGBA
     Image img (width, height);
-
 
     const size_t scanline_size = width * bpp + 1;     // Width of the image + 1 byte for the filter type
     u8* scanline_buf = new u8[scanline_size];
 
-
-    pxl_idx = 0;
-
     D(
-    int n=0;
-    int s=0;
-    int u=0;
-    int a=0;
-    int p=0;
+        int n=0;
+        int s=0;
+        int u=0;
+        int a=0;
+        int p=0;
     )
-
+    
     size_t write_idx = 0;
+    pxl_idx = 0;
 
     while(pxl_idx < inflated_data.size()) {
         std::memcpy(scanline_buf, inflated_data.data() + pxl_idx, scanline_size);

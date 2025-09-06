@@ -1,12 +1,16 @@
 #pragma once
 
 #include "ivmg/Image.hpp"
+#include "utils.hpp"
 #include <array>
 #include <cassert>
 #include <cstdint>
 #include <filesystem>
 
+
 namespace ivmg {
+
+using namespace types;
 
 typedef std::array<uint8_t, 4> Color;
 
@@ -32,6 +36,6 @@ struct qoi_header {
 
 void EncodeQOI(const Image& img, const std::filesystem::path& outfile);
 
-
+constexpr std::array<i8, 4> QOI_COLOR_DIFF(Color& c1, Color& c2);
 
 }

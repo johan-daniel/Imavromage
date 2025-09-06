@@ -194,7 +194,7 @@ class Image {
             {
                 std::vector<std::jthread> threads(num_threads);
 
-                for(int i = 0; i < num_threads; i++) {
+                for(size_t i = 0; i < num_threads; i++) {
                     size_t start = i * pixels_per_thread;
                     size_t end = (i == num_threads - 1) ? w * h : start + pixels_per_thread;
 
