@@ -1,5 +1,5 @@
 #include "qoi.hpp"
-#include "common.hpp"
+#include "core/common.hpp"
 #include <array>
 #include <bit>
 #include <cstdint>
@@ -64,14 +64,14 @@ void ivmg::EncodeQOI(const Image &img, const std::filesystem::path& outfile) {
                        diff[1] >= -2 && diff[1] <= 1 &&
                        diff[2] >= -2 && diff[2] <= 1 
                     ) {
-                        out_file << static_cast<u8>(QOI_OP_DIFF | (diff[0] + 2) << 4 | (diff[1] + 2) << 2 | diff[2] + 2);
+                        out_file << static_cast<u8>(QOI_OP_DIFF | (diff[0] + 2) << 4 | (diff[1] + 2) << 2 | (diff[2] + 2) );
                     }
                     // Luma
                     else if(diff[2] >= -32 && diff[2] <= 31 &&
                             vrg >= -8 && vrg <= 7 &&
                             vbg >= -8 && vbg <= 7
                     ) {
-                        out_file << static_cast<u16>(QOI_OP_LUMA | (diff[2] + 32) << 8 | (vrg + 8) << 4 | vbg + 8); 
+                        out_file << static_cast<u16>(QOI_OP_LUMA | (diff[2] + 32) << 8 | (vrg + 8) << 4 | (vbg + 8 )); 
                     }
                     // RGB
                     else {

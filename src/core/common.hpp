@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
-#include <ivmg/Formats.hpp>
+#include <ivmg/core/formats.hpp>
 
 
 namespace ivmg {

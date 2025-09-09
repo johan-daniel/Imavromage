@@ -1,13 +1,14 @@
 #include <ivmg/ivmg.hpp>
-#include <fstream>
-#include "Logger.hpp"
 
+#include <fstream>
+#include "logger.hpp"
 #include "codecs/codecs.hpp"
-#include "ivmg/Formats.hpp"
 #include "utils.hpp"
 
 using namespace ivmg;
 using namespace ivmg::types;
+
+enum class Formats;
 
 LOG_LEVEL Logger::level = LOG_LEVEL::NONE;
 

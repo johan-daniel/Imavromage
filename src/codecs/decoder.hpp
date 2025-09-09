@@ -1,9 +1,10 @@
 #pragma once
 
-#include "ivmg/Image.hpp"
+#include <fstream>
 
 namespace ivmg {
 
+class Image;
     
 class Decoder {
 public:

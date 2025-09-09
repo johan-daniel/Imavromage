@@ -3,9 +3,8 @@
 #include <fstream>
 #include <unordered_map>
 #include <vector>
-#include <ivmg/Image.hpp>
 
-#include "Decoder.hpp"
+#include "decoder.hpp"
 #include "macros.hpp"
 #include "utils.hpp"
 

@@ -1,10 +1,8 @@
-#ifndef __FILTER_HPP__
-#define __FILTER_HPP__
+#pragma once
 
 #include <cstdint>
 
-namespace ivmg {
-namespace filt {
+namespace ivmg::filt {
 
 class Filter {
     public:
@@ -24,6 +22,3 @@ class Filter {
 };
 
 }
-}
-
-#endif

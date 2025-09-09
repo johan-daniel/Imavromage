@@ -6,7 +6,7 @@ png_test = executable(
     'png/lodepng.cpp'
   ],
   include_directories: include_directories('.', '../include', 'png'),
-  dependencies: [zlib_dep],
+  dependencies: [def_dep],
   link_with: [ivmg_lib]
 )
 

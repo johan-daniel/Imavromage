@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Filter.hpp"
+#include "filter.hpp"
 #include <algorithm>
 #include <cstddef>
 #include "math.h"

@@ -1,5 +1,6 @@
 #include "pam.hpp"
-#include "common.hpp"
+#include "core/common.hpp"
+#include <ivmg/core/image.hpp>
 #include <fstream>
 
 void ivmg::EncodePAM(const Image &img, const std::filesystem::path& outfile) {

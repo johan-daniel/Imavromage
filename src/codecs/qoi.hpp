@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ivmg/Image.hpp"
+#include <ivmg/core/image.hpp>
 #include "utils.hpp"
 #include <array>
 #include <cassert>

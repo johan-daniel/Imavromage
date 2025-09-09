@@ -4,8 +4,8 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <ivmg/Image.hpp>
-#include <ivmg/Formats.hpp>
+#include <ivmg/core/image.hpp>
+#include <ivmg/core/formats.hpp>
 #include <memory>
 #include <unordered_map>
 

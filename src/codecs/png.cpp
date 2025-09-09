@@ -1,16 +1,10 @@
-#include "Logger.hpp"
-#include "utils.hpp"
+#include "logger.hpp"
 #include "png.hpp"
 #include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <fstream>
-#include <ios>
-#include <zlib.h>
 #include <libdeflate.h>
+#include <ivmg/core/image.hpp>
 
-using namespace ivmg;
+namespace ivmg {
 
 bool PNG_Decoder::can_decode(std::ifstream& filestream) const {
     auto startpos = filestream.tellg();
@@ -203,11 +197,11 @@ Image PNG_Decoder::DecodePNG(Vec<u8>& file_buffer) {
 
 ChunkPNG PNG_Decoder::ReadChunk(Vec<u8>& data, size_t& idx) {
     ChunkPNG chunk {};
-    chunk.length = Read<u32, BYTEORDER::BE>(data, idx);
-    chunk.type = static_cast<ChunkType>(Read<u32, BYTEORDER::BE>(data, idx));
+    chunk.length = Read<u32, std::endian::big>(data, idx);
+    chunk.type = static_cast<ChunkType>(Read<u32, std::endian::big>(data, idx));
     chunk.data = std::span<u8>(data.begin() + idx, chunk.length);
     idx += chunk.length;
-    chunk.crc = Read<u32, BYTEORDER::BE>(data, idx);
+    chunk.crc = Read<u32, std::endian::big>(data, idx);
 
     return chunk;
 }
@@ -216,9 +210,9 @@ ChunkPNG PNG_Decoder::ReadChunk(Vec<u8>& data, size_t& idx) {
 
 void PNG_Decoder::DecodeIHDR(std::span<u8> data) {
     size_t idx {0};
-    width = Read<u32, BYTEORDER::BE>(data, idx);
-    height = Read<u32, BYTEORDER::BE>(data, idx);
-    bit_depth = Read<u8, BYTEORDER::BE>(data, idx);
+    width = Read<u32, std::endian::big>(data, idx);
+    height = Read<u32, std::endian::big>(data, idx);
+    bit_depth = Read<u8, std::endian::big>(data, idx);
     color_type = static_cast<PNG_COLOR_TYPE>(Read<u8>(data, idx));
     compression_method = Read<u8>(data, idx);
     filter_method = Read<u8>(data, idx);
@@ -238,4 +232,7 @@ i16 PNG_Decoder::PaethPredictor(u8 a, u8 b, u8 c) {
     if(pa <= pb && pa <= pc) return a;
     else if(pb <= pc) return b;
     else return c;
+}
+
+
 }

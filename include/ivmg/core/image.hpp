@@ -3,21 +3,14 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
-#include <functional>
-#include <sys/types.h>
-#include <thread>
 #include <unordered_map>
 #include <vector>
-#include "filters/Filter.hpp"
-#include "ComputeContext.hpp"
 
-
-using namespace ivmg::filt;
 
 namespace ivmg {
 
-class Image;
+namespace filt { class Filter; }
+using namespace filt;
 
 //======================================================
 // COLOR TYPE HELPERS
@@ -124,15 +117,6 @@ using yuv_t = std::tuple<uint8_t, uint8_t, uint8_t>;
 
 
 //======================================================
-// WORKER STUBS FOR CONVOLUTION
-//======================================================
-void convolve_scalar_worker(const Image& img, const Filter& filter, Image& out, size_t start_pxl, size_t end_pxl);
-
-#ifdef __AVX512F__
-void convolve_avx512_worker(const Image& img, const Filter& filter, Image& out, size_t start_pxl, size_t end_pxl);
-#endif
-
-//======================================================
 // MAIN IMAGE CLASS
 //======================================================
 
@@ -146,13 +130,13 @@ class Image {
         uint32_t w;     // In pixels  
         uint32_t h;    // In pixels
         
-        friend void convolve_scalar_worker(const Image& img, const Filter& filter, Image& out, size_t start_pxl, size_t end_pxl);
 
     public:
         ColorType color_type;
         uint8_t nb_channels;
 
-        Image(const uint32_t w, const uint32_t h, ColorType ct = ColorType::RGBA): data(w * h * ChannelNb4Type.at(ct)), w(w), h(h), color_type(ct)
+        Image(const uint32_t w, const uint32_t h, ColorType ct = ColorType::RGBA): 
+        data(w * h * ChannelNb4Type.at(ct)), w(w), h(h), color_type(ct)
         {
             nb_channels = ChannelNb4Type.at(color_type);
         }
@@ -183,28 +167,7 @@ class Image {
         }
 
 
-        Image operator|(const Filter& f) {
-
-            Image out { w, h };
-            const size_t num_threads = std::thread::hardware_concurrency();
-            const size_t pixels_per_thread = (w * h) / num_threads;
-
-            auto fn = IvmgCtx::get().cpu_convolution;
- 
-            {
-                std::vector<std::jthread> threads(num_threads);
-
-                for(size_t i = 0; i < num_threads; i++) {
-                    size_t start = i * pixels_per_thread;
-                    size_t end = (i == num_threads - 1) ? w * h : start + pixels_per_thread;
-
-                    threads.emplace_back(convolve_scalar_worker, std::cref(*this), std::cref(f), std::ref(out), start, end);
-                }
-            }
-
-            return out;
-
-        }
+        Image operator|(const Filter& f);
 
     
 };

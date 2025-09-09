@@ -1,4 +1,6 @@
 #include "common.hpp"
+#include "ivmg/core/formats.hpp"
+#include "ivmg/core/image.hpp"
 #include "ivmg/ivmg.hpp"
 
 #include <cassert>

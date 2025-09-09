@@ -1,9 +1,9 @@
 #include "argparse.hpp"
-#include "ivmg/filters/GaussianBlur.hpp"
+#include <ivmg/filters/gaussian_blur.hpp>
 #include <chrono>
 #include <ivmg/ivmg.hpp>
-#include <ivmg/Image.hpp>
-#include <ivmg/Formats.hpp>
+#include <ivmg/core/image.hpp>
+#include <ivmg/core/formats.hpp>
 #include <getopt.h>
 #include <print>
 
@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
     int si = program.get<int>("--sigma");
 
     ivmg::Image img = ivmg::open(input_file);
+    ivmg::save(img, output_file, ivmg::Formats::PAM);
     // auto s = std::chrono::high_resolution_clock::now();
     // ivmg::Image img2 = img | GaussianBlur(k, si);
     // auto e = std::chrono::high_resolution_clock::now();

@@ -1,13 +1,10 @@
 #pragma once
 
-#include "Logger.hpp"
-#include <bit>
-#include <endian.h>
+#include "logger.hpp"
 #include <expected>
-#include <ivmg/Image.hpp>
-#include <cstring>
 #include <memory>
-#include <type_traits>
+#include <vector>
+#include <cstring>
 
 namespace ivmg::types {
     
@@ -40,20 +37,6 @@ using Shared = std::shared_ptr<T>;
 
 using namespace ivmg::types;
 
-enum class BYTEORDER { LE, BE };
-
-/**
-    Helper function to get the endianness of the host platform.
-    Useful when decoding and encoding images
-    @returns Byte order
-*/
-constexpr BYTEORDER get_host_endianness() {
-    switch(std::endian::native) {
-        case std::endian::little: return BYTEORDER::LE;
-        case std::endian::big: return BYTEORDER::BE;
-    }
-};
-
 
 /**
  *   @brief Function to read any fundamental and trivially copyable
@@ -66,7 +49,7 @@ constexpr BYTEORDER get_host_endianness() {
  *   @param idx Index from which to read the data. Reference for side effect for incrementing
  *   @returns Read data
  */
-template <typename T, BYTEORDER ordering = BYTEORDER::LE> 
+template <typename T, std::endian ordering = std::endian::little> 
 requires std::is_trivially_copyable_v<T>
 T Read(std::span<const u8> data, size_t& idx) {
     T dest;
@@ -84,6 +67,6 @@ T Read(std::span<const u8> data, size_t& idx) {
     Logger::log(lvl, "Attempted to read {} bytes @ {:#x}, did read {}", 
         read_size_attempt, reinterpret_cast<std::uintptr_t>(data.data()+idx), read_size_actual);
     
-    if(get_host_endianness() != ordering) return std::byteswap(dest);
+    if(std::endian::native != ordering) return std::byteswap(dest);
     return dest;
 }
