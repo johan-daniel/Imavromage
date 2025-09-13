@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <unordered_map>
@@ -22,99 +21,11 @@ enum class ColorType : uint8_t {
     YUV  = 2
 };
 
-const std::unordered_map<ColorType, uint8_t> ChannelNb4Type {
+const std::unordered_map<ColorType, uint8_t> colortype_to_chan_nb {
     { ColorType::RGBA, 4 },
     { ColorType::RGB,  3 },
     { ColorType::YUV,  3 }
 };
-
-//======================================================
-// PIXEL PROXIES TO MANIPULATE UNDERLYING DATA
-//======================================================
-
-struct PixelValue {
-    uint8_t data[4];
-    uint8_t nb_channels;
-
-    PixelValue(const uint8_t* p, uint8_t nc): nb_channels(nc) {
-        std::copy(p, p + nc, data);
-        std::fill(data + nc, data + 4, 0);
-    }
-};
-
-class PixelView {
-    protected:
-        uint8_t* ptr;
-        uint8_t nb_channels;
-        PixelView(uint8_t* p, uint8_t nc): ptr(p), nb_channels(nc) {}
-    
-    public:
-        void operator+=(const PixelValue& other) {
-            for(size_t i = 0; i < nb_channels; i++) {
-                double buf = ptr[i] + other.data[i];
-                ptr[i] = static_cast<uint8_t>(std::clamp(buf, 0.0, 255.0));
-            }
-        }
-
-        PixelValue operator*(const double f) const {
-            uint8_t buf[4];
-            for(size_t i = 0; i < nb_channels; i++) {
-                buf[i] = static_cast<uint8_t>(std::clamp(static_cast<double>(ptr[i]) * f, 0.0, 255.0));
-            }
-            return PixelValue(buf, 4);
-        }
-
-};
-
-template <ColorType C>
-struct Pixel : public PixelView {};
-
-template <>
-struct Pixel<ColorType::RGBA> : public PixelView {
-    Pixel(uint8_t* p) : PixelView(p, 4) {}
-
-    inline uint8_t& r() { return ptr[0]; }
-    inline uint8_t& g() { return ptr[1]; }
-    inline uint8_t& b() { return ptr[2]; }
-    inline uint8_t& a() { return ptr[3]; }
-
-    inline uint8_t r() const { return ptr[0]; }
-    inline uint8_t g() const { return ptr[1]; }
-    inline uint8_t b() const { return ptr[2]; }
-    inline uint8_t a() const { return ptr[3]; }
-};
-
-template <>
-struct Pixel<ColorType::RGB> : public PixelView {
-    Pixel(uint8_t* p) : PixelView(p, 3) {}
-
-    inline uint8_t& r() { return ptr[0]; }
-    inline uint8_t& g() { return ptr[1]; }
-    inline uint8_t& b() { return ptr[2]; }
-
-    inline uint8_t r() const { return ptr[0]; }
-    inline uint8_t g() const { return ptr[1]; }
-    inline uint8_t b() const { return ptr[2]; }
-};
-
-template <>
-struct Pixel<ColorType::YUV> : public PixelView {
-    Pixel(uint8_t* p) : PixelView(p, 3) {}
-
-    inline uint8_t& y() { return ptr[0]; }
-    inline uint8_t& u() { return ptr[1]; }
-    inline uint8_t& v() { return ptr[2]; }
-
-    inline uint8_t y() const { return ptr[0]; }
-    inline uint8_t u() const { return ptr[1]; }
-    inline uint8_t v() const { return ptr[2]; }
-};
-
-
-using rgba_t = std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>;
-using rgb_t = std::tuple<uint8_t, uint8_t, uint8_t>;
-using yuv_t = std::tuple<uint8_t, uint8_t, uint8_t>;
-
 
 //======================================================
 // MAIN IMAGE CLASS
@@ -136,9 +47,9 @@ class Image {
         uint8_t nb_channels;
 
         Image(const uint32_t w, const uint32_t h, ColorType ct = ColorType::RGBA): 
-        data(w * h * ChannelNb4Type.at(ct)), w(w), h(h), color_type(ct)
+            data(w * h * colortype_to_chan_nb.at(ct), 255), w(w), h(h), color_type(ct)
         {
-            nb_channels = ChannelNb4Type.at(color_type);
+            nb_channels = colortype_to_chan_nb.at(color_type);
         }
         
         // ACCESSORS
@@ -147,24 +58,8 @@ class Image {
         constexpr uint32_t width() const { return w; }
         constexpr uint32_t height() const { return h; }
         constexpr size_t size_bytes() const { return data.size(); }
-        constexpr size_t size_pixels() const { return data.size() / ChannelNb4Type.at(color_type); }      // Assuming RGBA for now
+        constexpr size_t size_pixels() const { return data.size() / colortype_to_chan_nb.at(color_type); }      // Assuming RGBA for now
 
-
-        template <ColorType C>
-        Pixel<C> at(size_t x, size_t y) {
-            assert(x < w && y < h);
-
-            size_t index = (y * w + x) * 4;
-            return Pixel<C>(&data[index]);
-        }
-
-        template <ColorType C>
-        const Pixel<C> at(size_t x, size_t y) const {
-            assert(x < w && y < h);
-
-            size_t index = (y * w + x) * 4;
-            return Pixel<C>(&data[index]);
-        }
 
 
         Image operator|(const Filter& f);

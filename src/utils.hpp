@@ -51,7 +51,7 @@ using namespace ivmg::types;
  */
 template <typename T, std::endian ordering = std::endian::little> 
 requires std::is_trivially_copyable_v<T>
-T Read(std::span<const u8> data, size_t& idx) {
+T read(std::span<const u8> data, size_t& idx) {
     T dest;
 
     size_t read_size_attempt = sizeof(T);

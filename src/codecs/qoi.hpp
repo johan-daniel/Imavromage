@@ -34,7 +34,7 @@ struct qoi_header {
 } __attribute__((packed));
 
 
-void EncodeQOI(const Image& img, const std::filesystem::path& outfile);
+void encode_qoi(const Image& img, const std::filesystem::path& outfile);
 
 constexpr std::array<i8, 4> QOI_COLOR_DIFF(Color& c1, Color& c2);
 

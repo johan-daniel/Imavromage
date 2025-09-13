@@ -1,4 +1,4 @@
-project('Imavromage', 'cpp', version: '0.0.2', default_options: ['cpp_std=c++23'])
+project('Imavromage', 'cpp', version: '0.0.3', default_options: ['cpp_std=c++23'])
 
 def_dep = dependency('libdeflate', required: true)
 

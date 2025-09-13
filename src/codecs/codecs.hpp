@@ -28,7 +28,6 @@ enum class IVMG_DEC_ERR {
 
 class DecoderRegistry {
 private:
-    // static Vec<Unique<Decoder>> decs;
 
 public:
     static ResultOr<Image, IVMG_DEC_ERR> decode(std::ifstream& file) {
@@ -49,18 +48,11 @@ public:
 };
 
 
-
-// Decoder functions registration
-// typedef std::function<Image(uint8_t*, size_t)> Decoder_fn;
-// const std::unordered_map<Formats, Decoder_fn> avail_decoders = {
-//     { ivmg::Formats::PNG, DecodePNG }
-// };
-
 // Encoder functions registration
 typedef std::function<void(const Image&, const std::filesystem::path&)> Encoder_fn;
 const std::unordered_map<Formats, Encoder_fn> encoders = {
-    { Formats::QOI, EncodeQOI },
-    { Formats::PAM, EncodePAM }
+    { Formats::QOI, encode_qoi },
+    { Formats::PAM, encode_pam }
 };
 
 }

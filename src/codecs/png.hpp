@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cstdlib>
 #include <fstream>
 #include <unordered_map>
-#include <vector>
 
 #include "decoder.hpp"
 #include "macros.hpp"
@@ -62,14 +62,15 @@ constexpr u8 magic[magic_length] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0
 class PNG_Decoder : public Decoder {
 
 private:
-    u32 width, height;
+    size_t bpp;
+    u32 width;
+    u32 height;
     u8 bit_depth;
     PNG_COLOR_TYPE color_type;
     u8 compression_method;
     u8 filter_method;
     u8 interlace_method;
-    size_t bpp;
-    std::vector<u8> compressed_data;
+    Vec<u8> compressed_data;
     Vec<u8> inflated_data;
 
 public:
@@ -78,10 +79,11 @@ public:
     Image decode(std::ifstream& filestream) override;
 
 private:
-    ChunkPNG ReadChunk(Vec<u8>& file_buffer, size_t &read_idx);
-    void DecodeIHDR(std::span<u8> data);
-    Image DecodePNG(Vec<u8>& file_buffer);
-    i16 PaethPredictor(u8 a, u8 b, u8 c);
+    ChunkPNG read_chunk(Vec<u8>& file_buffer, size_t &read_idx);
+    void decode_ihdr(std::span<u8> data);
+    Image decode_png(Vec<u8>& file_buffer);
+    u8 paeth_predictor(u8 a, u8 b, u8 c);
+    std::optional<std::span<const u8>> get_scanline(std::span<const u8>& data, size_t scanline_size);
 };
 
 

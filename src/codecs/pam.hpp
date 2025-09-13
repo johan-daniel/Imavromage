@@ -6,7 +6,7 @@ namespace ivmg {
 
 class Image;
 
-void EncodePAM(const Image& img, const std::filesystem::path& outfile);
+void encode_pam(const Image& img, const std::filesystem::path& outfile);
 
 
 }

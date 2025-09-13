@@ -3,7 +3,7 @@
 #include <ivmg/core/image.hpp>
 #include <fstream>
 
-void ivmg::EncodePAM(const Image &img, const std::filesystem::path& outfile) {
+void ivmg::encode_pam(const Image &img, const std::filesystem::path& outfile) {
     std::ofstream outppm(outfile, std::ios::binary);
     outppm << "P7\n"
         << "WIDTH " << img.width() << "\n"

@@ -8,7 +8,7 @@
 
 using namespace ivmg;
 
-void ivmg::EncodeQOI(const Image &img, const std::filesystem::path& outfile) {
+void ivmg::encode_qoi(const Image &img, const std::filesystem::path& outfile) {
 
     std::ofstream out_file(outfile, std::ios::binary);
 
