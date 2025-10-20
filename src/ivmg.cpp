@@ -27,7 +27,7 @@ Image ivmg::open(const std::string& imgpath) {
             break;
         }
     }
-    
+
 
     Logger::log(LOG_LEVEL::ERROR, "Unknown format");
     exit(1);
@@ -35,9 +35,14 @@ Image ivmg::open(const std::string& imgpath) {
 
 
 
-void ivmg::save(const Image &img, const std::filesystem::path &imgpath, Formats target) {
-    if(encoders.contains(target))
+std::expected<void, IVMG_ENC_ERR> ivmg::save(const Image &img, const std::filesystem::path &imgpath) {
+
+    Formats target = ext_to_format.at(imgpath.extension());
+
+    if(encoders.contains(target)) {
         encoders.at(target)(img, imgpath);
+        return {};
+    }
     else
-        Logger::log(LOG_LEVEL::ERROR, "I shit pant while trying to encode {} image. SoonTM trust", imgpath.extension().string());
+        return std::unexpected(IVMG_ENC_ERR::UNSUPPORTED_FORMAT);
 }

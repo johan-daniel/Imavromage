@@ -20,10 +20,6 @@ namespace ivmg {
 
 class Decoder;
 
-enum class IVMG_DEC_ERR {
-    UNKNOWN_FORMAT
-};
-
 
 
 class DecoderRegistry {
@@ -37,7 +33,7 @@ public:
             decs.emplace_back(std::make_unique<PNG_Decoder>());
         }
 
-        for(const auto& d : decs) { 
+        for(const auto& d : decs) {
             if(d->can_decode(file))
                 return d->decode(file);
         }

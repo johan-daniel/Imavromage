@@ -10,11 +10,13 @@ using namespace ivmg;
 
 void ivmg::encode_qoi(const Image &img, const std::filesystem::path& outfile) {
 
+    std::println("Encoding in QOI");
+
     std::ofstream out_file(outfile, std::ios::binary);
 
     qoi_header hdr {
-        .width = std::byteswap(img.width()),
-        .height = std::byteswap(img.height()),
+        .width = (img.width()),
+        .height = (img.height()),
         .channels = 4,
         .colorspace = 1
     };
@@ -44,7 +46,7 @@ void ivmg::encode_qoi(const Image &img, const std::filesystem::path& outfile) {
             }
 
             int pxl_hash = QOI_PIXEL_HASH(current_pxl[0], current_pxl[1], current_pxl[2], current_pxl[3]);
-            
+
             if(current_pxl == pxl_cache[pxl_hash]) {
                 out_file << static_cast<u8>(QOI_OP_INDEX | pxl_hash);
             }
@@ -62,7 +64,7 @@ void ivmg::encode_qoi(const Image &img, const std::filesystem::path& outfile) {
                     // Diff
                     if(diff[0] >= -2 && diff[0] <= 1 &&
                        diff[1] >= -2 && diff[1] <= 1 &&
-                       diff[2] >= -2 && diff[2] <= 1 
+                       diff[2] >= -2 && diff[2] <= 1
                     ) {
                         out_file << static_cast<u8>(QOI_OP_DIFF | (diff[0] + 2) << 4 | (diff[1] + 2) << 2 | (diff[2] + 2) );
                     }
@@ -71,7 +73,7 @@ void ivmg::encode_qoi(const Image &img, const std::filesystem::path& outfile) {
                             vrg >= -8 && vrg <= 7 &&
                             vbg >= -8 && vbg <= 7
                     ) {
-                        out_file << static_cast<u16>(QOI_OP_LUMA | (diff[2] + 32) << 8 | (vrg + 8) << 4 | (vbg + 8 )); 
+                        out_file << static_cast<u16>(QOI_OP_LUMA | (diff[2] + 32) << 8 | (vrg + 8) << 4 | (vbg + 8 ));
                     }
                     // RGB
                     else {

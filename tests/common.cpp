@@ -37,7 +37,7 @@ std::string create_temp_dir() {
 
 void decode(const std::string& input_path, const std::string& output_path) {
     ivmg::Image img = ivmg::open(input_path);
-    ivmg::save(img, output_path, ivmg::Formats::PAM);
+    ivmg::save(img, output_path);
 }
 
 std::vector<unsigned char> read_pam(const std::string& path, unsigned w, unsigned h) {

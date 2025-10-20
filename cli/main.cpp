@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     int si = program.get<int>("--sigma");
 
     ivmg::Image img = ivmg::open(input_file);
-    ivmg::save(img, output_file, ivmg::Formats::PAM);
+    ivmg::save(img, output_file);
     // auto s = std::chrono::high_resolution_clock::now();
     // ivmg::Image img2 = img | GaussianBlur(k, si);
     // auto e = std::chrono::high_resolution_clock::now();
