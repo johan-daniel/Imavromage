@@ -3,7 +3,6 @@ src_files = [
   'codecs/pam.cpp', 
   'codecs/png.cpp', 
   'codecs/qoi.cpp', 
-  'core/features.cpp',
   'core/image.cpp'
 ]
 

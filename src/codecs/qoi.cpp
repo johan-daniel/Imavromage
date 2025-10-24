@@ -2,97 +2,117 @@
 #include "core/common.hpp"
 #include <array>
 #include <bit>
-#include <cstdint>
 #include <filesystem>
 #include <fstream>
 
 using namespace ivmg;
 
-void ivmg::encode_qoi(const Image &img, const std::filesystem::path& outfile) {
 
+void ivmg::encode_qoi(const Image &img, const std::filesystem::path &outfile) {
     std::println("Encoding in QOI");
-
-    std::ofstream out_file(outfile, std::ios::binary);
+    std::ofstream out(outfile, std::ios::out | std::ios::binary);
 
     qoi_header hdr {
-        .width = (img.width()),
-        .height = (img.height()),
+        .width = std::byteswap(img.width()),
+        .height = std::byteswap(img.height()),
         .channels = 4,
-        .colorspace = 1
+        .colorspace = QOI_COLORSPACE::SRGB
     };
 
-    std::vector<uint8_t> qoi_magic = magics.at(Formats::QOI);
-    out_file.write(reinterpret_cast<char*>(qoi_magic.data()), qoi_magic.size());
-    out_file.write(reinterpret_cast<char*>(&hdr), sizeof(hdr));
+    qoi_color_t prev_pxl = { 0, 0, 0, 255 };
+    size_t run = 0;
 
-    Color prev_pxl = {0, 0, 0, 255}, current_pxl;
-    uint8_t run = 0;
 
-    std::array<Color, 64> pxl_cache {};
+    #define QOI_RUN \
+        out.put(QOI_OP_RUN | (run - 1)); \
+        run = 0;
 
-    for(size_t i = 0; i < img.width() * img.height(); i += BYTE_PER_PIXEL) {
-        current_pxl = { img.get_raw_handle()[i], img.get_raw_handle()[i+1], img.get_raw_handle()[i+2], img.get_raw_handle()[i+3] };
 
-        if(current_pxl == prev_pxl) {
-            if(++run == 62) {
-                out_file << static_cast<u8>(QOI_OP_RUN | (run - 1));
-                run = 0;
+    out.write(reinterpret_cast<char*>(&hdr), sizeof(hdr));
+
+
+    std::array<qoi_color_t, 64> color_cache {};
+
+
+    for(size_t i = 0; i < img.size_bytes(); i += BYTE_PER_PIXEL) {
+        qoi_color_t cur_pxl = { 
+            img.get_raw_handle()[i], 
+            img.get_raw_handle()[i + 1], 
+            img.get_raw_handle()[i + 2], 
+            img.get_raw_handle()[i + 3] 
+        };
+
+        if (cur_pxl == prev_pxl) {
+            run++;
+            if (run == 62 || run == img.size_bytes()) {
+                QOI_RUN
             }
         }
         else {
-            if(run != 0) {
-                out_file << static_cast<u8>(QOI_OP_RUN | (run - 1));
-                run = 0;
+            if (run > 0) {
+                QOI_RUN
             }
 
-            int pxl_hash = QOI_PIXEL_HASH(current_pxl[0], current_pxl[1], current_pxl[2], current_pxl[3]);
+            int pxl_hash = QOI_PIXEL_HASH(cur_pxl[0], cur_pxl[1], cur_pxl[2], cur_pxl[3]);
 
-            if(current_pxl == pxl_cache[pxl_hash]) {
-                out_file << static_cast<u8>(QOI_OP_INDEX | pxl_hash);
+            if (color_cache.at(pxl_hash) == cur_pxl) {
+                out.put(QOI_OP_INDEX | pxl_hash);
             }
             else {
-                pxl_cache[pxl_hash] = current_pxl;
+                color_cache.at(pxl_hash) = cur_pxl;
 
-                std::array<i8, 4> diff = QOI_COLOR_DIFF(current_pxl, prev_pxl);
+                // Same alpha, we can diff
+                if (cur_pxl[3] == prev_pxl[3]) {
+                    qoi_diff_t diff = QOI_COLOR_DIFF(cur_pxl, prev_pxl);
 
-                i8 vrg = diff[0] - diff[1];
-                i8 vbg = diff[2] - diff[1];
+                    i16 vg_r = diff[0] - diff[1];
+                    i16 vg_b = diff[2] - diff[1];
 
-                // Same alpha
-                if(diff[3] == 0) {
-
-                    // Diff
-                    if(diff[0] >= -2 && diff[0] <= 1 &&
-                       diff[1] >= -2 && diff[1] <= 1 &&
-                       diff[2] >= -2 && diff[2] <= 1
-                    ) {
-                        out_file << static_cast<u8>(QOI_OP_DIFF | (diff[0] + 2) << 4 | (diff[1] + 2) << 2 | (diff[2] + 2) );
-                    }
-                    // Luma
-                    else if(diff[2] >= -32 && diff[2] <= 31 &&
-                            vrg >= -8 && vrg <= 7 &&
-                            vbg >= -8 && vbg <= 7
-                    ) {
-                        out_file << static_cast<u16>(QOI_OP_LUMA | (diff[2] + 32) << 8 | (vrg + 8) << 4 | (vbg + 8 ));
-                    }
-                    // RGB
+                    if (
+						diff[0] > -3 && diff[0] < 2 &&
+						diff[1] > -3 && diff[1] < 2 &&
+						diff[2] > -3 && diff[2] < 2
+					) {
+						out.put(QOI_OP_DIFF | (diff[0] + 2) << 4 | (diff[1] + 2) << 2 | (diff[2] + 2));
+					}
+                    else if (
+						vg_r >  -9 && vg_r <  8 &&
+						diff[2] > -33 && diff[2] < 32 &&
+						vg_b >  -9 && vg_b <  8
+					) {
+						out.put(QOI_OP_LUMA | (diff[2] + 32));
+						out.put(((vg_r + 8) << 4) | (vg_b +  8));
+					}
                     else {
-                        out_file << static_cast<u32>(QOI_OP_RGB << 24 | current_pxl[0] << 16 | current_pxl[1] << 8 | current_pxl[2]);
-                    }
-                }
-                // Different alpha, need to encode it
-                else {
-                    out_file << static_cast<u8>(QOI_OP_RGBA);
-                    out_file << static_cast<u32>(current_pxl[0] << 24 | current_pxl[1] << 16 | current_pxl[2] << 8 | current_pxl[3]);
+                        out << static_cast<u32>(QOI_OP_RGB | cur_pxl[0] << 16 | cur_pxl[1] << 8 | cur_pxl[2]);
+					}
                 }
 
+                // Oh no
+                else {
+                    out.put(QOI_OP_RGBA);
+                    out << static_cast<u32>(cur_pxl[0] << 24 | cur_pxl[1] << 16 | cur_pxl[2] << 8 | cur_pxl[3]);
+                }
             }
 
         }
 
+        prev_pxl = std::move(cur_pxl);
     }
+
+
+
+    const char QOI_END_MARKER[8] = {0,0,0,0,0,0,0,1};
+    out.write(QOI_END_MARKER, 8);
+
+    #undef QOI_RUN
 }
 
-constexpr std::array<i8, 4> ivmg::QOI_COLOR_DIFF(Color &c1, Color &c2) {
-    return { static_cast<i8>(c1[0] - c2[0]), static_cast<i8>(c1[1] - c2[1]), static_cast<i8>(c1[2] - c2[2]), static_cast<i8>(c1[3] - c2[3]) };
+constexpr qoi_diff_t ivmg::QOI_COLOR_DIFF(qoi_color_t &c1, qoi_color_t &c2) {
+    return { 
+        static_cast<i16>(c1[0] - c2[0]), 
+        static_cast<i16>(c1[1] - c2[1]), 
+        static_cast<i16>(c1[2] - c2[2]), 
+        static_cast<i16>(c1[3] - c2[3]) 
+    };
 }

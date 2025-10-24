@@ -1,6 +1,5 @@
 #include "argparse.hpp"
 #include <ivmg/filters/gaussian_blur.hpp>
-#include <chrono>
 #include <ivmg/ivmg.hpp>
 #include <ivmg/core/image.hpp>
 #include <ivmg/core/formats.hpp>
